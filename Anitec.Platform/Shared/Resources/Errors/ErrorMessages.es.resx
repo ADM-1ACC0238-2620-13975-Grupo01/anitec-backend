@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <data name="GenericError" xml:space="preserve">
+    <value>Ocurrió un error.</value>
+  </data>
+    <data name="OperationCancelled" xml:space="preserve">
+    <value>La operación fue cancelada.</value>
+  </data>
+    <data name="IamError.UserNotFound" xml:space="preserve">
+    <value>Usuario no encontrado.</value>
+  </data>
+    <data name="IamError.UsernameAlreadyTaken" xml:space="preserve">
+    <value>El nombre de usuario {0} ya está en uso.</value>
+  </data>
+  <data name="IamError.InvalidCredentials" xml:space="preserve">
+    <value>Nombre de usuario o contraseña inválidos.</value>
+  </data>
+  <data name="IamError.InvalidRole" xml:space="preserve">
+    <value>Rol invalido. Usa Rancher o Veterinarian.</value>
+  </data>
+  <data name="IamError.OperationCancelled" xml:space="preserve">
+    <value>La operación de usuario fue cancelada.</value>
+  </data>
+    <data name="IamError.DatabaseError" xml:space="preserve">
+    <value>Ocurrió un error de base de datos durante la operación IAM.</value>
+  </data>
+    <data name="IamError.InternalServerError" xml:space="preserve">
+    <value>Ocurrió un error interno inesperado en IAM.</value>
+  </data>
+    <data name="IamError.ExternalServiceError" xml:space="preserve">
+    <value>Ocurrió un error de servicio externo en IAM.</value>
+  </data>
+
+    <data name="ProfilesError.ProfileNotFound" xml:space="preserve">
+    <value>Perfil no encontrado.</value>
+  </data>
+    <data name="ProfilesError.EmailAlreadyRegistered" xml:space="preserve">
+    <value>La dirección de correo electrónico {0} ya está registrada.</value>
+  </data>
+    <data name="ProfilesError.InvalidProfileData" xml:space="preserve">
+    <value>Datos de perfil inválidos proporcionados.</value>
+  </data>
+    <data name="ProfilesError.OperationCancelled" xml:space="preserve">
+    <value>La operación de perfil fue cancelada.</value>
+  </data>
+    <data name="ProfilesError.DatabaseError" xml:space="preserve">
+    <value>Ocurrió un error de base de datos durante la operación de perfil.</value>
+  </data>
+    <data name="ProfilesError.InternalServerError" xml:space="preserve">
+    <value>Ocurrió un error interno inesperado en Perfiles.</value>
+  </data>
+
+    <data name="LivestockError.HerdNotFound" xml:space="preserve">
+    <value>Rebano no encontrado.</value>
+  </data>
+    <data name="LivestockError.AnimalNotFound" xml:space="preserve">
+    <value>Animal no encontrado.</value>
+  </data>
+    <data name="SanitaryError.HealthEventNotFound" xml:space="preserve">
+    <value>Evento sanitario no encontrado.</value>
+  </data>
+    <data name="FinancialError.FinancialRecordNotFound" xml:space="preserve">
+    <value>Registro financiero no encontrado.</value>
+  </data>
+    <data name="ActivitiesError.FarmActivityNotFound" xml:space="preserve">
+    <value>Actividad no encontrada.</value>
+  </data>
+    <data name="AnalyticsError.ReportMetricNotFound" xml:space="preserve">
+    <value>Metrica de reporte no encontrada.</value>
+  </data>
+    <data name="DevicesError.DeviceNotFound" xml:space="preserve">
+    <value>Dispositivo no encontrado.</value>
+  </data>
+    <data name="MetricsError.DeviceMetricNotFound" xml:space="preserve">
+    <value>Metrica de dispositivo no encontrada.</value>
+  </data>
+    <data name="SubscriptionsError.SubscriptionPlanNotFound" xml:space="preserve">
+    <value>Plan de suscripcion no encontrado.</value>
+  </data>
+    <data name="SubscriptionsError.SubscriptionNotFound" xml:space="preserve">
+    <value>Suscripcion no encontrada.</value>
+  </data>
+</root>

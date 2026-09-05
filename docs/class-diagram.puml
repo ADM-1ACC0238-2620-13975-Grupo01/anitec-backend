@@ -1,0 +1,569 @@
+@startuml Acme.Center.Platform Class Diagram - Publishing, IAM, Shared Bounded Contexts
+
+    title 
+        Acme.Center.Platform 
+        Class Diagram
+        Publishing, IAM, Shared Bounded Contexts
+    end title
+    
+    package "Publishing Bounded Context" as Publishing {
+        package "Domain" as Domain {
+            class Tutorial <<Aggregate>> {
+                +Tutorial(string title, string summary, int categoryId)
+                +Id: int
+                +Title: string
+                +Summary: string
+                +CategoryId: int
+                +Category: Category?
+                +Assets: ICollection<Asset>
+                +Status: EPublishingStatus
+                +Readable: bool
+                +Viewable: bool
+                +HasReadableAssets: bool
+                +HasViewableAssets: bool
+                +CreatedDate: DateTimeOffset?
+                +UpdatedDate: DateTimeOffset?
+            }
+    
+            class Category <<Entity>> {
+                +Category(string name)
+                +Id: int
+                +Name: string
+            }
+    
+            class Asset <<Entity>> {
+                +Asset(EAssetType type)
+                +Id: int
+                +AssetIdentifier: AcmeAssetIdentifier
+                +Status: EPublishingStatus
+                +Type: EAssetType
+                +Readable: bool
+                +Viewable: bool
+                +SendToEdit(): void
+                +SendToApproval(): void
+                +ApproveAndLock(): void
+                +Reject(): void
+                +ReturnToEdit(): void
+                +GetContent(): object
+            }
+    
+            class VideoAsset extends Asset {
+                +VideoAsset(string videoUrl)
+                +VideoUri: Uri?
+                +Readable: bool = false
+                +Viewable: bool = true
+            }
+    
+            class ImageAsset extends Asset {
+                +ImageAsset()
+                +ImageUri: Uri?
+                +Readable: bool = false
+                +Viewable: bool = true
+            }
+    
+            class ReadableContentAsset extends Asset {
+                +ReadableContentAsset()
+                +Readable: bool = true
+                +Viewable: bool = false
+            }
+    
+            enum EPublishingStatus <<ValueObject>> {
+                Draft
+                ReadyToEdit
+                ReadyToApproval
+                ApprovedAndLocked
+            }
+    
+            interface ITutorialQueryService {
+                +Handle(GetTutorialByIdQuery query, CancellationToken cancellationToken): Task<Tutorial?>
+                +Handle(GetAllTutorialsQuery query, CancellationToken cancellationToken): Task<IEnumerable<Tutorial>>
+                +Handle(GetAllTutorialsByCategoryIdQuery query, CancellationToken cancellationToken): Task<IEnumerable<Tutorial>>
+            }
+    
+            interface ITutorialCommandService {
+                +Handle(AddVideoAssetToTutorialCommand command, CancellationToken cancellationToken): Task<Result<Tutorial>>
+                +Handle(CreateTutorialCommand command, CancellationToken cancellationToken): Task<Result<Tutorial>>
+            }
+    
+            interface ICategoryQueryService {
+                +Handle(GetCategoryByIdQuery query, CancellationToken cancellationToken): Task<Category?>
+                +Handle(GetAllCategoriesQuery query, CancellationToken cancellationToken): Task<IEnumerable<Category>>
+            }
+    
+            interface ICategoryCommandService {
+                +Handle(CreateCategoryCommand command, CancellationToken cancellationToken): Task<Result<Category>>
+            }
+    
+            interface ITutorialRepository extends IBaseRepository<Tutorial> {
+                +FindByCategoryIdAsync(int categoryId, CancellationToken cancellationToken): Task<IEnumerable<Tutorial>>
+                +ExistsByTitleAsync(string title, CancellationToken cancellationToken): Task<bool>
+            }
+    
+            interface ICategoryRepository extends IBaseRepository<Category> {
+            }
+        }
+    
+        package "Application" as Application {
+            class TutorialCommandService implements ITutorialCommandService {
+                +TutorialCommandService(ITutorialRepository tutorialRepository, ICategoryRepository categoryRepository, IUnitOfWork unitOfWork, IStringLocalizer<ErrorMessages> localizer)
+                +Handle(AddVideoAssetToTutorialCommand command, CancellationToken cancellationToken): Task<Result<Tutorial>>
+                +Handle(CreateTutorialCommand command, CancellationToken cancellationToken): Task<Result<Tutorial>>
+            }
+    
+            class TutorialQueryService implements ITutorialQueryService {
+                +TutorialQueryService(ITutorialRepository tutorialRepository)
+                +Handle(GetTutorialByIdQuery query, CancellationToken cancellationToken): Task<Tutorial?>
+                +Handle(GetAllTutorialsQuery query, CancellationToken cancellationToken): Task<IEnumerable<Tutorial>>
+                +Handle(GetAllTutorialsByCategoryIdQuery query, CancellationToken cancellationToken): Task<IEnumerable<Tutorial>>
+            }
+    
+            class CategoryCommandService implements ICategoryCommandService {
+                +CategoryCommandService(ICategoryRepository categoryRepository, IUnitOfWork unitOfWork, IMediator domainEventPublisher, IStringLocalizer<ErrorMessages> localizer)
+                +Handle(CreateCategoryCommand command, CancellationToken cancellationToken): Task<Result<Category>>
+            }
+    
+            class CategoryQueryService implements ICategoryQueryService {
+                +CategoryQueryService(ICategoryRepository categoryRepository)
+                +Handle(GetCategoryByIdQuery query, CancellationToken cancellationToken): Task<Category?>
+                +Handle(GetAllCategoriesQuery query, CancellationToken cancellationToken): Task<IEnumerable<Category>>
+            }
+        }
+    
+        package "Infrastructure" as Infrastructure {
+            class TutorialRepository implements ITutorialRepository {
+                +TutorialRepository(AppDbContext context)
+                +AddAsync(Tutorial entity, CancellationToken cancellationToken): Task
+                +FindByIdAsync(int id, CancellationToken cancellationToken): Task<Tutorial?>
+                +Update(Tutorial entity): void
+                +Remove(Tutorial entity): void
+                +ListAsync(CancellationToken cancellationToken): Task<IEnumerable<Tutorial>>
+                +FindByCategoryIdAsync(int categoryId, CancellationToken cancellationToken): Task<IEnumerable<Tutorial>>
+                +ExistsByTitleAsync(string title, CancellationToken cancellationToken): Task<bool>
+            }
+    
+            class CategoryRepository implements ICategoryRepository {
+                +CategoryRepository(AppDbContext context)
+                +AddAsync(Category entity, CancellationToken cancellationToken): Task
+                +FindByIdAsync(int id, CancellationToken cancellationToken): Task<Category?>
+                +Update(Category entity): void
+                +Remove(Category entity): void
+                +ListAsync(CancellationToken cancellationToken): Task<IEnumerable<Category>>
+            }
+        }
+    
+        package "Interfaces" as Interfaces {
+            class TutorialsController {
+                +TutorialsController(ITutorialCommandService tutorialCommandService, ITutorialQueryService tutorialQueryService, IStringLocalizer<ErrorMessages> errorLocalizer, ProblemDetailsFactory problemDetailsFactory)
+                +GetTutorialById(int tutorialId, CancellationToken cancellationToken): Task<IActionResult>
+                +CreateTutorial(CreateTutorialResource resource, CancellationToken cancellationToken): Task<IActionResult>
+                +GetAllTutorials(CancellationToken cancellationToken): Task<IActionResult>
+                +AddVideoToTutorial(AddVideoAssetToTutorialResource resource, int tutorialId, CancellationToken cancellationToken): Task<IActionResult>
+            }
+    
+            class CategoriesController {
+                +CategoriesController(ICategoryCommandService categoryCommandService, ICategoryQueryService categoryQueryService, IStringLocalizer<ErrorMessages> errorLocalizer, ProblemDetailsFactory problemDetailsFactory)
+                +GetCategoryById(int categoryId, CancellationToken cancellationToken): Task<IActionResult>
+                +CreateCategory(CreateCategoryResource resource, CancellationToken cancellationToken): Task<IActionResult>
+                +GetAllCategories(CancellationToken cancellationToken): Task<IActionResult>
+            }
+    
+            class CategoryTutorialsController {
+                +CategoryTutorialsController(ITutorialQueryService tutorialQueryService, ProblemDetailsFactory problemDetailsFactory, IStringLocalizer<ErrorMessages> errorLocalizer)
+                +GetTutorialsByCategoryId(int categoryId, CancellationToken cancellationToken): Task<IActionResult>
+            }
+    
+            class CreateTutorialCommandFromResourceAssembler {
+                +ToCommandFromResource(CreateTutorialResource resource): CreateTutorialCommand
+            }
+    
+            class TutorialResourceFromEntityAssembler {
+                +ToResourceFromEntity(Tutorial entity): TutorialResource
+            }
+    
+            class CreateCategoryCommandFromResourceAssembler {
+                +ToCommandFromResource(CreateCategoryResource resource): CreateCategoryCommand
+            }
+    
+            class CategoryResourceFromEntityAssembler {
+                +ToResourceFromEntity(Category entity): CategoryResource
+            }
+    
+            class AddVideoAssetToTutorialCommandFromResourceAssembler {
+                +ToCommandFromResource(AddVideoAssetToTutorialResource resource, int tutorialId): AddVideoAssetToTutorialCommand
+            }
+    
+            class PublishingActionResultAssembler <<static>> {
+                +ToActionResultFromCreateCategoryResult(ControllerBase controller, Result<Category> result, IStringLocalizer<ErrorMessages> errorLocalizer, ProblemDetailsFactory problemDetailsFactory, Func<Category, IActionResult> successAction): IActionResult
+                +ToActionResultFromGetCategoryByIdResult(ControllerBase controller, Category? category, IStringLocalizer<ErrorMessages> errorLocalizer, ProblemDetailsFactory problemDetailsFactory, Func<Category, IActionResult> successAction): IActionResult
+                +ToActionResultFromCreateTutorialResult(ControllerBase controller, Result<Tutorial> result, IStringLocalizer<ErrorMessages> errorLocalizer, ProblemDetailsFactory problemDetailsFactory, Func<Tutorial, IActionResult> successAction): IActionResult
+                +ToActionResultFromAddVideoAssetToTutorialResult(ControllerBase controller, Result<Tutorial> result, IStringLocalizer<ErrorMessages> errorLocalizer, ProblemDetailsFactory problemDetailsFactory, Func<Tutorial, IActionResult> successAction): IActionResult
+                +ToActionResultFromGetTutorialByIdResult(ControllerBase controller, Tutorial? tutorial, IStringLocalizer<ErrorMessages> errorLocalizer, ProblemDetailsFactory problemDetailsFactory, Func<Tutorial, IActionResult> successAction): IActionResult
+                +ToActionResultFromGetAllTutorialsByCategoryIdResult(ControllerBase controller, IEnumerable<Tutorial> tutorials, IStringLocalizer<ErrorMessages> errorLocalizer, ProblemDetailsFactory problemDetailsFactory, Func<IEnumerable<Tutorial>, IActionResult> successAction): IActionResult
+            }
+    
+            class CreateTutorialResource {
+                +Title: string
+                +Summary: string
+                +CategoryId: int
+            }
+    
+            class TutorialResource {
+                +Id: int
+                +Title: string
+                +Summary: string
+                +Category: CategoryResource?
+            }
+    
+            class CreateCategoryResource {
+                +Name: string
+            }
+    
+            class CategoryResource {
+                +Id: int
+                +Name: string
+            }
+    
+            class AddVideoAssetToTutorialResource {
+                +VideoUrl: string
+            }
+        }
+    
+        ' Relationships within Publishing
+        Tutorial --> Category : association (belongs to)
+        Tutorial *-- Asset : composition (has many)
+        Asset <|-- VideoAsset : inheritance
+        Asset <|-- ImageAsset : inheritance
+        Asset <|-- ReadableContentAsset : inheritance
+        TutorialCommandService ..> ITutorialRepository : dependency
+        TutorialQueryService ..> ITutorialRepository : dependency
+        CategoryCommandService ..> ICategoryRepository : dependency
+        CategoryQueryService ..> ICategoryRepository : dependency
+        TutorialsController ..> ITutorialCommandService : dependency
+        TutorialsController ..> ITutorialQueryService : dependency
+        TutorialsController ..> PublishingActionResultAssembler : dependency
+        CategoriesController ..> ICategoryCommandService : dependency
+        CategoriesController ..> ICategoryQueryService : dependency
+        CategoriesController ..> PublishingActionResultAssembler : dependency
+        CategoryTutorialsController ..> ITutorialQueryService : dependency
+        CategoryTutorialsController ..> PublishingActionResultAssembler : dependency
+        TutorialsController ..> CreateTutorialCommandFromResourceAssembler : dependency
+        TutorialsController ..> TutorialResourceFromEntityAssembler : dependency
+        TutorialsController ..> AddVideoAssetToTutorialCommandFromResourceAssembler : dependency
+        CategoriesController ..> CreateCategoryCommandFromResourceAssembler : dependency
+        CategoriesController ..> CategoryResourceFromEntityAssembler : dependency
+        TutorialRepository ..|> ITutorialRepository : implements
+        CategoryRepository ..|> ICategoryRepository : implements
+    }
+    
+    package "IAM Bounded Context" as Iam {
+        package "Domain" as Domain {
+            class User <<Aggregate>> {
+                +User(string username, string passwordHash)
+                +Id: int
+                +Username: string
+                +PasswordHash: string
+                +UpdateUsername(string username): User
+                +UpdatePasswordHash(string passwordHash): User
+            }
+    
+            interface IUserCommandService {
+                +Handle(SignInCommand command, CancellationToken cancellationToken): Task<Result<(User user, string token)>>
+                +Handle(SignUpCommand command, CancellationToken cancellationToken): Task<Result>
+            }
+    
+            interface IUserQueryService {
+                +Handle(GetUserByIdQuery query, CancellationToken cancellationToken): Task<User?>
+                +Handle(GetAllUsersQuery query, CancellationToken cancellationToken): Task<IEnumerable<User>>
+                +Handle(GetUserByUsernameQuery query, CancellationToken cancellationToken): Task<User?>
+            }
+    
+            interface IUserRepository extends IBaseRepository<User> {
+                +FindByUsernameAsync(string username, CancellationToken cancellationToken): Task<User?>
+                +ExistsByUsername(string username, CancellationToken cancellationToken): Task<bool>
+            }
+        }
+    
+        package "Application" as Application {
+            class UserCommandService implements IUserCommandService {
+                +UserCommandService(IUserRepository userRepository, ITokenService tokenService, IHashingService hashingService, IUnitOfWork unitOfWork, IStringLocalizer<ErrorMessages> localizer)
+                +Handle(SignInCommand command, CancellationToken cancellationToken): Task<Result<(User user, string token)>>
+                +Handle(SignUpCommand command, CancellationToken cancellationToken): Task<Result>
+            }
+    
+            class UserQueryService implements IUserQueryService {
+                +UserQueryService(IUserRepository userRepository)
+                +Handle(GetUserByIdQuery query, CancellationToken cancellationToken): Task<User?>
+                +Handle(GetAllUsersQuery query, CancellationToken cancellationToken): Task<IEnumerable<User>>
+                +Handle(GetUserByUsernameQuery query, CancellationToken cancellationToken): Task<User?>
+            }
+        }
+    
+        package "Infrastructure" {
+            class UserRepository implements IUserRepository {
+                +UserRepository(AppDbContext context)
+                +AddAsync(User entity, CancellationToken cancellationToken): Task
+                +FindByIdAsync(int id, CancellationToken cancellationToken): Task<User?>
+                +Update(User entity): void
+                +Remove(User entity): void
+                +ListAsync(CancellationToken cancellationToken): Task<IEnumerable<User>>
+                +FindByUsernameAsync(string username, CancellationToken cancellationToken): Task<User?>
+                +ExistsByUsername(string username, CancellationToken cancellationToken): Task<bool>
+            }
+        }
+    
+        package "Interfaces" {
+            class AuthenticationController {
+                +AuthenticationController(IUserCommandService userCommandService, IStringLocalizer<ErrorMessages> errorLocalizer, IStringLocalizer<IamMessages> iamLocalizer, ProblemDetailsFactory problemDetailsFactory)
+                +SignIn(SignInResource signInResource, CancellationToken cancellationToken): Task<IActionResult>
+                +SignUp(SignUpResource signUpResource, CancellationToken cancellationToken): Task<IActionResult>
+            }
+    
+            class UsersController {
+                +UsersController(IUserQueryService userQueryService, IStringLocalizer<ErrorMessages> errorLocalizer, ProblemDetailsFactory problemDetailsFactory)
+                +GetUserById(int id, CancellationToken cancellationToken): Task<IActionResult>
+                +GetAllUsers(CancellationToken cancellationToken): Task<IActionResult>
+            }
+    
+            class SignInResource {
+                +Username: string
+                +Password: string
+            }
+    
+            class SignUpResource {
+                +Username: string
+                +Password: string
+            }
+    
+            class AuthenticatedUserResource {
+                +Id: int
+                +Username: string
+                +Token: string
+            }
+    
+            class UserResource {
+                +Id: int
+                +Username: string
+            }
+        }
+    
+    }
+        package "Profiles Bounded Context" as Profiles {
+            package "Domain" {
+                class Profile <<Aggregate>> {
+                    +Profile(CreateProfileCommand command)
+                    +Id: int
+                    +FullName: FullName
+                    +EmailAddress: EmailAddress
+                    +StreetAddress: StreetAddress
+                    +CreatedDate: DateTimeOffset?
+                    +UpdatedDate: DateTimeOffset?
+                }
+    
+                class FullName <<ValueObject>> {
+                    +FullName(string firstName, string lastName)
+                    +FirstName: string
+                    +LastName: string
+                    +Value: string
+                }
+    
+                class EmailAddress <<ValueObject>> {
+                    +Address: string
+                }
+    
+                class StreetAddress <<ValueObject>> {
+                    +StreetAddress(string street, string number, string city, string postalCode, string country)
+                    +Street: string
+                    +Number: string
+                    +City: string
+                    +PostalCode: string
+                    +Country: string
+                    +Value: string
+                }
+    
+                interface IProfileCommandService {
+                    +Handle(CreateProfileCommand command, CancellationToken cancellationToken): Task<Result<Profile>>
+                }
+    
+                interface IProfileQueryService {
+                    +Handle(GetAllProfilesQuery query, CancellationToken cancellationToken): Task<IEnumerable<Profile>>
+                    +Handle(GetProfileByEmailQuery query, CancellationToken cancellationToken): Task<Profile?>
+                    +Handle(GetProfileByIdQuery query, CancellationToken cancellationToken): Task<Profile?>
+                }
+    
+                interface IProfileRepository extends IBaseRepository<Profile> {
+                    +FindProfileByEmailAsync(EmailAddress email, CancellationToken cancellationToken): Task<Profile?>
+                }
+            }
+    
+            package "Application" as Application {
+                class ProfileCommandService implements IProfileCommandService {
+                    +ProfileCommandService(IProfileRepository profileRepository, IUnitOfWork unitOfWork, IStringLocalizer<ErrorMessages> localizer)
+                    +Handle(CreateProfileCommand command, CancellationToken cancellationToken): Task<Result<Profile>>
+                }
+    
+                class ProfileQueryService implements IProfileQueryService {
+                    +Handle(GetAllProfilesQuery query, CancellationToken cancellationToken): Task<IEnumerable<Profile>>
+                    +Handle(GetProfileByEmailQuery query, CancellationToken cancellationToken): Task<Profile?>
+                    +Handle(GetProfileByIdQuery query, CancellationToken cancellationToken): Task<Profile?>
+                }
+            }
+    
+            package "Infrastructure" as Infrastructure {
+                class ProfileRepository implements IProfileRepository {
+                    +ProfileRepository(AppDbContext context)
+                    +AddAsync(Profile entity, CancellationToken cancellationToken): Task
+                    +FindByIdAsync(int id, CancellationToken cancellationToken): Task<Profile?>
+                    +Update(Profile entity): void
+                    +Remove(Profile entity): void
+                    +ListAsync(CancellationToken cancellationToken): Task<IEnumerable<Profile>>
+                    +FindProfileByEmailAsync(EmailAddress email, CancellationToken cancellationToken): Task<Profile?>
+                }
+            }
+    
+            package "Interfaces" as Interfaces {
+                class ProfilesController {
+                    +ProfilesController(IProfileCommandService profileCommandService, IProfileQueryService profileQueryService, IStringLocalizer<ErrorMessages> errorLocalizer, ProblemDetailsFactory problemDetailsFactory)
+                    +GetProfileById(int profileId, CancellationToken cancellationToken): Task<IActionResult>
+                    +CreateProfile(CreateProfileResource resource, CancellationToken cancellationToken): Task<IActionResult>
+                    +GetAllProfiles(CancellationToken cancellationToken): Task<IActionResult>
+                }
+    
+                class CreateProfileCommandFromResourceAssembler {
+                    +ToCommandFromResource(CreateProfileResource resource): CreateProfileCommand
+                }
+    
+                class ProfileResourceFromEntityAssembler {
+                    +ToResourceFromEntity(Profile entity): ProfileResource
+                }
+    
+                class ProfilesActionResultAssembler <<static>> {
+                    +ToActionResultFromCreateProfileResult(ControllerBase controller, Result<Profile> result, IStringLocalizer<ErrorMessages> errorLocalizer, ProblemDetailsFactory problemDetailsFactory, Func<Profile, IActionResult> successAction): IActionResult
+                    +ToActionResultFromGetProfileByIdResult(ControllerBase controller, Profile? profile, IStringLocalizer<ErrorMessages> errorLocalizer, ProblemDetailsFactory problemDetailsFactory, Func<Profile, IActionResult> successAction): IActionResult
+                }
+    
+                class CreateProfileResource {
+                    +FirstName: string
+                    +LastName: string
+                    +Email: string
+                    +Street: string
+                    +Number: string
+                    +City: string
+                    +PostalCode: string
+                    +Country: string
+                }
+    
+                class ProfileResource {
+                    +Id: int
+                    +FullName: string
+                    +EmailAddress: string
+                    +StreetAddress: string
+                }
+            }
+    
+            ' Relationships within Profiles
+            ProfileCommandService   ..> IProfileRepository : dependency
+            ProfileQueryService     ..> IProfileRepository : dependency
+            ProfilesController      ..> IProfileCommandService : dependency
+            ProfilesController      ..> IProfileQueryService : dependency
+            ProfilesController      ..> ProfilesActionResultAssembler : dependency
+            ProfilesController      ..> CreateProfileCommandFromResourceAssembler : dependency
+            ProfilesController      ..> ProfileResourceFromEntityAssembler : dependency
+            ProfileRepository       ..|> IProfileRepository : implements
+        }
+    
+    package "Shared Bounded Context" as Shared {
+        package "Domain" as Domain {
+            interface IBaseRepository<TEntity> {
+                +AddAsync(TEntity entity, CancellationToken cancellationToken): Task
+                +FindByIdAsync(int id, CancellationToken cancellationToken): Task<TEntity?>
+                +Update(TEntity entity): void
+                +Remove(TEntity entity): void
+                +ListAsync(CancellationToken cancellationToken): Task<IEnumerable<TEntity>>
+            }
+    
+            interface IUnitOfWork {
+                +CompleteAsync(CancellationToken cancellationToken): Task
+            }
+    
+            interface IEvent {
+            }
+    
+            class Result<T> {
+                +IsSuccess: bool
+                +IsFailure: bool
+                +Value: T?
+                +Message: string
+                +Error: Enum?
+                +Success(T value): Result<T>
+                +Failure(Enum error, string message): Result<T>
+            }
+    
+            class Result {
+                +IsSuccess: bool
+                +IsFailure: bool
+                +Message: string
+                +Error: Enum?
+                +Success(): Result
+                +Failure(Enum error, string message): Result
+            }
+        }
+    
+        package "Infrastructure" as Infrastructure {
+            class AppDbContext {
+                +AppDbContext(DbContextOptions<AppDbContext> options)
+                +SaveChangesAsync(CancellationToken cancellationToken): Task<int>
+            }
+    
+            class BaseRepository<TEntity> implements IBaseRepository<TEntity> {
+                +BaseRepository(AppDbContext context)
+                +AddAsync(TEntity entity, CancellationToken cancellationToken): Task
+                +FindByIdAsync(int id, CancellationToken cancellationToken): Task<TEntity?>
+                +Update(TEntity entity): void
+                +Remove(TEntity entity): void
+                +ListAsync(CancellationToken cancellationToken): Task<IEnumerable<TEntity>>
+            }
+    
+            class UnitOfWork implements IUnitOfWork {
+                +UnitOfWork(AppDbContext context)
+                +CompleteAsync(CancellationToken cancellationToken): Task
+            }
+        }
+    
+        package "Interfaces" as Interfaces {
+            class ProblemDetailsFactory {
+                +ProblemDetailsFactory(IStringLocalizer<ErrorMessages> errorLocalizer, IStringLocalizer<Commons> commonLocalizer, Microsoft.AspNetCore.Mvc.Infrastructure.ProblemDetailsFactory aspNetCoreProblemDetailsFactory)
+                +CreateProblemDetails(ControllerBase controller, int statusCode, Enum? errorEnum, string detailMessage): IActionResult
+                +CreateProblemDetails(ControllerBase controller, int statusCode, string titleKey, string detailKey, params object[] detailArgs): IActionResult
+            }
+        }
+    }
+
+    ' Cross-boundary relationships
+
+    ICategoryRepository ..|> IBaseRepository : extends
+    IUserRepository     ..|> IBaseRepository : extends
+    ITutorialRepository ..|> IBaseRepository : extends
+
+    ' Application Layer dependencies on Shared
+    TutorialCommandService  ..> IUnitOfWork : dependency
+    CategoryCommandService  ..> IUnitOfWork : dependency
+    UserCommandService      ..> IUnitOfWork : dependency
+    ProfileCommandService   ..> IUnitOfWork : dependency
+
+    ' Infrastructure Layer dependencies on Shared
+    TutorialRepository  ..>  AppDbContext : dependency
+    CategoryRepository  ..>  AppDbContext : dependency
+    UserRepository      ..>  AppDbContext : dependency
+    ProfileRepository   ..>  AppDbContext : dependency
+    BaseRepository      ..>  AppDbContext : dependency
+    UnitOfWork          ..>  AppDbContext : dependency
+
+    ' Interfaces Layer dependencies on Shared
+    TutorialsController         ..> ProblemDetailsFactory : dependency
+    CategoriesController        ..> ProblemDetailsFactory : dependency
+    CategoryTutorialsController ..> ProblemDetailsFactory : dependency
+    AuthenticationController    ..> ProblemDetailsFactory : dependency
+    UsersController             ..> ProblemDetailsFactory : dependency
+    ProfilesController          ..> ProblemDetailsFactory : dependency
+
+@enduml

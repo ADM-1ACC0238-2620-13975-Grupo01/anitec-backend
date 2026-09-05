@@ -1,0 +1,38 @@
+﻿## Rider / JetBrains
+.idea/
+*.sln.iml
+
+## Carpeta de compilación y resultados
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+TestResults/
+
+## Archivos de configuración de usuario de Visual Studio / Rider
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.rsuser
+
+## NuGet
+packages/
+*/packages/
+*.nupkg
+
+## Cobertura de código
+*.DotSettings.user
+*.coverage
+*.coveragxml
+
+## Logs y archivos temporales
+*.log
+*.tmp
+*.err
+_ReSharper.*/
+TestResults/
+msbuild.log
+msbuild.err

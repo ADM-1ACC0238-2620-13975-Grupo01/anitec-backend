@@ -1,0 +1,9 @@
+.git/
+.gitignore
+.idea/
+bin/
+obj/
+out/
+*.user
+*.suo
+.DS_Store

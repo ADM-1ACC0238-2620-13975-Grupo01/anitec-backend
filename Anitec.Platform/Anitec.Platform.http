@@ -1,0 +1,7 @@
+@Anitec.Platform_HostAddress = http://localhost:5191
+
+GET {{Anitec.Platform_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
+

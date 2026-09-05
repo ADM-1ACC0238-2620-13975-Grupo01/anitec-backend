@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+    <data name="GenericError" xml:space="preserve">
+    <value>An error occurred.</value>
+  </data>
+    <data name="OperationCancelled" xml:space="preserve">
+    <value>The operation was cancelled.</value>
+  </data>
+    <data name="IamError.UserNotFound" xml:space="preserve">
+    <value>User not found.</value>
+  </data>
+    <data name="IamError.UsernameAlreadyTaken" xml:space="preserve">
+    <value>Username {0} is already taken.</value>
+  </data>
+  <data name="IamError.InvalidCredentials" xml:space="preserve">
+    <value>Invalid username or password.</value>
+  </data>
+  <data name="IamError.InvalidRole" xml:space="preserve">
+    <value>Invalid role. Use Rancher or Veterinarian.</value>
+  </data>
+  <data name="IamError.OperationCancelled" xml:space="preserve">
+    <value>User operation was cancelled.</value>
+  </data>
+    <data name="IamError.DatabaseError" xml:space="preserve">
+    <value>A database error occurred during IAM operation.</value>
+  </data>
+    <data name="IamError.InternalServerError" xml:space="preserve">
+    <value>An unexpected internal error occurred in IAM.</value>
+  </data>
+    <data name="IamError.ExternalServiceError" xml:space="preserve">
+    <value>An external service error occurred in IAM.</value>
+  </data>
+
+    <data name="ProfilesError.ProfileNotFound" xml:space="preserve">
+    <value>Profile not found.</value>
+  </data>
+    <data name="ProfilesError.EmailAlreadyRegistered" xml:space="preserve">
+    <value>Email address {0} is already registered.</value>
+  </data>
+    <data name="ProfilesError.InvalidProfileData" xml:space="preserve">
+    <value>Invalid profile data provided.</value>
+  </data>
+    <data name="ProfilesError.OperationCancelled" xml:space="preserve">
+    <value>Profile operation was cancelled.</value>
+  </data>
+    <data name="ProfilesError.DatabaseError" xml:space="preserve">
+    <value>A database error occurred during profile operation.</value>
+  </data>
+    <data name="ProfilesError.InternalServerError" xml:space="preserve">
+    <value>An unexpected internal error occurred in Profiles.</value>
+  </data>
+
+    <data name="LivestockError.HerdNotFound" xml:space="preserve">
+    <value>Herd not found.</value>
+  </data>
+    <data name="LivestockError.AnimalNotFound" xml:space="preserve">
+    <value>Animal not found.</value>
+  </data>
+    <data name="SanitaryError.HealthEventNotFound" xml:space="preserve">
+    <value>Health event not found.</value>
+  </data>
+    <data name="FinancialError.FinancialRecordNotFound" xml:space="preserve">
+    <value>Financial record not found.</value>
+  </data>
+    <data name="ActivitiesError.FarmActivityNotFound" xml:space="preserve">
+    <value>Farm activity not found.</value>
+  </data>
+    <data name="AnalyticsError.ReportMetricNotFound" xml:space="preserve">
+    <value>Report metric not found.</value>
+  </data>
+    <data name="DevicesError.DeviceNotFound" xml:space="preserve">
+    <value>Device not found.</value>
+  </data>
+    <data name="MetricsError.DeviceMetricNotFound" xml:space="preserve">
+    <value>Device metric not found.</value>
+  </data>
+    <data name="SubscriptionsError.SubscriptionPlanNotFound" xml:space="preserve">
+    <value>Subscription plan not found.</value>
+  </data>
+    <data name="SubscriptionsError.SubscriptionNotFound" xml:space="preserve">
+    <value>Subscription not found.</value>
+  </data>
+</root>
