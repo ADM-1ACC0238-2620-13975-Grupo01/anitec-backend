@@ -27,10 +27,28 @@ public static class ModelBuilderExtensions
                 value => value.HasValue ? value.Value.ToDateTime(TimeOnly.MinValue) : null,
                 value => value.HasValue ? DateOnly.FromDateTime(value.Value) : null));
         builder.Entity<Animal>().Property(a => a.Status).IsRequired().HasMaxLength(30);
+        builder.Entity<Animal>().Property(a => a.Source).HasMaxLength(40);
+        builder.Entity<Animal>().Property(a => a.AgeRange).HasMaxLength(20);
+        builder.Entity<Animal>().Property(a => a.ImageUrl).HasMaxLength(300);
         builder.Entity<Animal>()
             .HasOne<Herd>()
             .WithMany()
             .HasForeignKey(a => a.HerdId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<Corral>().HasKey(c => c.Id);
+        builder.Entity<Corral>().Property(c => c.Id).IsRequired().ValueGeneratedOnAdd();
+        builder.Entity<Corral>().Property(c => c.Name).IsRequired().HasMaxLength(80);
+        builder.Entity<Corral>()
+            .HasOne<Herd>()
+            .WithMany()
+            .HasForeignKey(c => c.HerdId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<Animal>()
+            .HasOne<Corral>()
+            .WithMany()
+            .HasForeignKey(a => a.CorralId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

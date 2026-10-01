@@ -88,6 +88,8 @@ using Microsoft.Extensions.Localization;
 using Microsoft.OpenApi;
 using ProblemDetailsFactory = Anitec.Platform.Shared.Interfaces.Rest.ProblemDetails.ProblemDetailsFactory;
 
+Directory.CreateDirectory(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "animals"));
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddRouting(options => options.LowercaseUrls = true);
@@ -171,6 +173,9 @@ builder.Services.AddScoped<IHerdQueryService, HerdQueryService>();
 builder.Services.AddScoped<IAnimalRepository, AnimalRepository>();
 builder.Services.AddScoped<IAnimalCommandService, AnimalCommandService>();
 builder.Services.AddScoped<IAnimalQueryService, AnimalQueryService>();
+builder.Services.AddScoped<ICorralRepository, CorralRepository>();
+builder.Services.AddScoped<ICorralCommandService, CorralCommandService>();
+builder.Services.AddScoped<ICorralQueryService, CorralQueryService>();
 
 // Sanitary Bounded Context
 builder.Services.AddScoped<IHealthEventRepository, HealthEventRepository>();
@@ -265,6 +270,8 @@ if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseStaticFiles();
 
 app.UseCors("AllowAllPolicy");
 app.UseRequestAuthorization();

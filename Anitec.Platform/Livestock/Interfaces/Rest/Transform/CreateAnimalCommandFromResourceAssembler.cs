@@ -7,6 +7,6 @@ public static class CreateAnimalCommandFromResourceAssembler
 {
     public static CreateAnimalCommand ToCommandFromResource(CreateAnimalResource resource)
     {
-        return new CreateAnimalCommand(resource.Tag, resource.Name, resource.Species, resource.Breed, resource.Gender, resource.BirthDate, resource.Weight, resource.Status, resource.HerdId);
+        return new CreateAnimalCommand(resource.Tag, resource.Name, resource.Species, resource.Breed, resource.Gender, resource.BirthDate, resource.Weight, resource.Status, resource.HerdId, resource.CorralId, resource.Source, resource.AgeRange, resource.ImageUrl);
     }
 }

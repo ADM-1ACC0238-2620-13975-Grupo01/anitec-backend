@@ -25,7 +25,10 @@ public class Animal
         Weight = command.Weight;
         Status = command.Status;
         HerdId = command.HerdId;
-
+        CorralId = command.CorralId;
+        Source = command.Source;
+        AgeRange = command.AgeRange;
+        ImageUrl = command.ImageUrl;
     }
 
     public int Id { get; set; }
@@ -38,4 +41,8 @@ public class Animal
     public decimal Weight { get; set; }
     public string Status { get; set; }
     public int HerdId { get; set; }
+    public int? CorralId { get; set; }
+    public string? Source { get; set; }
+    public string? AgeRange { get; set; }
+    public string? ImageUrl { get; set; }
 }

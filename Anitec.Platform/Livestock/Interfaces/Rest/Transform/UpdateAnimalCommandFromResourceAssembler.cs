@@ -7,6 +7,6 @@ public static class UpdateAnimalCommandFromResourceAssembler
 {
     public static UpdateAnimalCommand ToCommandFromResource(int id, CreateAnimalResource resource)
     {
-        return new UpdateAnimalCommand(id, resource.Tag, resource.Name, resource.Species, resource.Breed, resource.Gender, resource.BirthDate, resource.Weight, resource.Status, resource.HerdId);
+        return new UpdateAnimalCommand(id, resource.Tag, resource.Name, resource.Species, resource.Breed, resource.Gender, resource.BirthDate, resource.Weight, resource.Status, resource.HerdId, resource.CorralId, resource.Source, resource.AgeRange, resource.ImageUrl);
     }
 }

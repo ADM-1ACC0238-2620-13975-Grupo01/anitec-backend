@@ -10,4 +10,7 @@ public interface IAnimalCommandService
     Task<Result<Animal>> Handle(CreateAnimalCommand command, CancellationToken cancellationToken);
     Task<Result<Animal>> Handle(UpdateAnimalCommand command, CancellationToken cancellationToken);
     Task<Result> Handle(DeleteAnimalCommand command, CancellationToken cancellationToken);
+    Task<Result<List<Animal>>> Handle(CreateAnimalBatchCommand command, CancellationToken cancellationToken);
+    Task<Result<List<Animal>>> Handle(UpdateAnimalsStatusCommand command, CancellationToken cancellationToken);
+    Task<Result> Handle(DeleteAnimalsCommand command, CancellationToken cancellationToken);
 }

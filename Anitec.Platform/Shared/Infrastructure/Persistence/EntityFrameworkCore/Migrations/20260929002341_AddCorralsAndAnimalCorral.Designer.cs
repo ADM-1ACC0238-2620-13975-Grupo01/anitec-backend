@@ -3,6 +3,7 @@ using System;
 using Anitec.Platform.Shared.Infrastructure.Persistence.EntityFrameworkCore.Configuration;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Anitec.Platform.Shared.Infrastructure.Persistence.EntityFrameworkCore.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260929002341_AddCorralsAndAnimalCorral")]
+    partial class AddCorralsAndAnimalCorral
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -283,11 +286,6 @@ namespace Anitec.Platform.Shared.Infrastructure.Persistence.EntityFrameworkCore.
                         .HasColumnType("int")
                         .HasColumnName("id");
 
-                    b.Property<string>("AgeRange")
-                        .HasMaxLength(20)
-                        .HasColumnType("varchar(20)")
-                        .HasColumnName("age_range");
-
                     b.Property<DateTime?>("BirthDate")
                         .HasColumnType("datetime(6)")
                         .HasColumnName("birth_date");
@@ -312,21 +310,11 @@ namespace Anitec.Platform.Shared.Infrastructure.Persistence.EntityFrameworkCore.
                         .HasColumnType("int")
                         .HasColumnName("herd_id");
 
-                    b.Property<string>("ImageUrl")
-                        .HasMaxLength(300)
-                        .HasColumnType("varchar(300)")
-                        .HasColumnName("image_url");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(80)
                         .HasColumnType("varchar(80)")
                         .HasColumnName("name");
-
-                    b.Property<string>("Source")
-                        .HasMaxLength(40)
-                        .HasColumnType("varchar(40)")
-                        .HasColumnName("source");
 
                     b.Property<string>("Species")
                         .IsRequired()
