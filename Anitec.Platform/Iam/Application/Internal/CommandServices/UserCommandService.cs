@@ -73,9 +73,16 @@ public class UserCommandService(
         if (role is null)
             return Result.Failure(IamError.InvalidRole, _localizer[nameof(IamError.InvalidRole)]);
 
+        // The e-mail is optional: blank means "not provided", anything else must be well formed and unused.
+        var email = string.IsNullOrWhiteSpace(command.Email) ? null : NormalizeEmail(command.Email);
+        if (!string.IsNullOrWhiteSpace(command.Email) && email is null)
+            return Result.Failure(IamError.InvalidEmail, _localizer[nameof(IamError.InvalidEmail)]);
+        if (email is not null && await userRepository.ExistsByEmailAsync(email, cancellationToken))
+            return Result.Failure(IamError.EmailAlreadyTaken, _localizer[nameof(IamError.EmailAlreadyTaken), email]);
+
         var hashedPassword = hashingService.HashPassword(command.Password);
         var fullName = string.IsNullOrWhiteSpace(command.FullName) ? command.Username : command.FullName;
-        var user = new User(command.Username, hashedPassword, fullName, role);
+        var user = new User(command.Username, hashedPassword, fullName, role, email);
         try
         {
             await userRepository.AddAsync(user, cancellationToken);
@@ -97,6 +104,17 @@ public class UserCommandService(
             return Result.Failure(IamError.InternalServerError, _localizer[nameof(IamError.InternalServerError)]);
         }
     }
+
+    /// <summary>Trims and lower-cases the address; returns null when it is not a plausible e-mail.</summary>
+    private static string? NormalizeEmail(string email)
+    {
+        var normalized = email.Trim().ToLowerInvariant();
+        if (normalized.Length is 0 or > 254) return null;
+        return EmailPattern.IsMatch(normalized) ? normalized : null;
+    }
+
+    private static readonly System.Text.RegularExpressions.Regex EmailPattern =
+        new(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", System.Text.RegularExpressions.RegexOptions.Compiled);
 
     private static string? NormalizeRole(string role)
     {

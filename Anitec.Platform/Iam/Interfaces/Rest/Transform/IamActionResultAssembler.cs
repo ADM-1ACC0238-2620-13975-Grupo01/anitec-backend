@@ -23,6 +23,8 @@ public static class IamActionResultAssembler
             IamError.InvalidCredentials => StatusCodes.Status400BadRequest,
             IamError.InvalidRole => StatusCodes.Status400BadRequest,
             IamError.UsernameAlreadyTaken => StatusCodes.Status409Conflict,
+            IamError.EmailAlreadyTaken => StatusCodes.Status409Conflict,
+            IamError.InvalidEmail => StatusCodes.Status400BadRequest,
             IamError.OperationCancelled => StatusCodes.Status409Conflict,
             IamError.DatabaseError => StatusCodes.Status500InternalServerError,
             IamError.InternalServerError => StatusCodes.Status500InternalServerError,

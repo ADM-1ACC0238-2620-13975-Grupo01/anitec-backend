@@ -14,6 +14,9 @@ public static class ModelBuilderExtensions
         builder.Entity<User>().Property(u => u.FullName).IsRequired().HasMaxLength(120);
         builder.Entity<User>().Property(u => u.Role).IsRequired().HasMaxLength(40);
         builder.Entity<User>().Property(u => u.PasswordHash).IsRequired();
+        // Optional; a unique index still allows many rows without an e-mail.
+        builder.Entity<User>().Property(u => u.Email).HasMaxLength(254);
+        builder.Entity<User>().HasIndex(u => u.Email).IsUnique();
     }
     
 }

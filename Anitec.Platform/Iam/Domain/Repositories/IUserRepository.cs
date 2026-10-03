@@ -32,4 +32,6 @@ public interface IUserRepository : IBaseRepository<User>
      * <returns>True if the user exists, false otherwise</returns>
      */
     Task<bool> ExistsByUsernameAsync(string username, CancellationToken cancellationToken);
+
+    Task<bool> ExistsByEmailAsync(string email, CancellationToken cancellationToken);
 }

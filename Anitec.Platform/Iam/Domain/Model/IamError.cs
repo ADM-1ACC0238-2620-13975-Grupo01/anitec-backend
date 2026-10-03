@@ -10,5 +10,7 @@ public enum IamError
     OperationCancelled,
     DatabaseError,
     InternalServerError,
-    ExternalServiceError
+    ExternalServiceError,
+    InvalidEmail,
+    EmailAlreadyTaken
 }

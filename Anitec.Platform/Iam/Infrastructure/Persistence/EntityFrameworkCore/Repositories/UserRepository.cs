@@ -40,4 +40,10 @@ public class UserRepository(AppDbContext context) : BaseRepository<User>(context
     {
         return await Context.Set<User>().AnyAsync(user => user.Username.Equals(username), cancellationToken);
     }
+
+    /// <summary>Check whether any user already uses the given (already normalized) e-mail.</summary>
+    public async Task<bool> ExistsByEmailAsync(string email, CancellationToken cancellationToken)
+    {
+        return await Context.Set<User>().AnyAsync(user => user.Email == email, cancellationToken);
+    }
 }

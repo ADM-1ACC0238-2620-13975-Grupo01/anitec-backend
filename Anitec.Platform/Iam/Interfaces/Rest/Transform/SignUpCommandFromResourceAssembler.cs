@@ -27,6 +27,6 @@ public static class SignUpCommandFromResourceAssembler
                 "SignUpResource cannot be null when converting to command.");
         var fullName = string.IsNullOrWhiteSpace(resource.FullName) ? resource.Username : resource.FullName;
         var role = string.IsNullOrWhiteSpace(resource.Role) ? "Rancher" : resource.Role;
-        return new SignUpCommand(resource.Username, resource.Password, fullName, role);
+        return new SignUpCommand(resource.Username, resource.Password, fullName, role, resource.Email);
     }
 }

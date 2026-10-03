@@ -7,4 +7,4 @@ namespace Anitec.Platform.Iam.Domain.Model.Commands;
  *     This command object includes the username and password to sign up
  * </remarks>
  */
-public record SignUpCommand(string Username, string Password, string FullName, string Role);
+public record SignUpCommand(string Username, string Password, string FullName, string Role, string? Email = null);

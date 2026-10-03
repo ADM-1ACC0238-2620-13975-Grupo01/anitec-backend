@@ -9,6 +9,12 @@
     <data name="IamError.UserNotFound" xml:space="preserve">
     <value>Usuario no encontrado.</value>
   </data>
+    <data name="IamError.InvalidEmail" xml:space="preserve">
+    <value>El correo electrónico no es válido.</value>
+  </data>
+    <data name="IamError.EmailAlreadyTaken" xml:space="preserve">
+    <value>El correo {0} ya está registrado.</value>
+  </data>
     <data name="IamError.UsernameAlreadyTaken" xml:space="preserve">
     <value>El nombre de usuario {0} ya está en uso.</value>
   </data>

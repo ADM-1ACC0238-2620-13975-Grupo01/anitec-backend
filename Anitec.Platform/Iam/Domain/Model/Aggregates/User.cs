@@ -10,7 +10,7 @@ namespace Anitec.Platform.Iam.Domain.Model.Aggregates;
  *     This class is used to represent a user
  * </remarks>
  */
-public partial class User(string username, string passwordHash, string fullName, string role)
+public partial class User(string username, string passwordHash, string fullName, string role, string? email = null)
 {
     public User() : this(string.Empty, string.Empty, string.Empty, "Rancher")
     {
@@ -21,6 +21,9 @@ public partial class User(string username, string passwordHash, string fullName,
     public string Username { get; private set; } = username;
     public string FullName { get; private set; } = fullName;
     public string Role { get; private set; } = role;
+
+    /// <summary>Optional contact e-mail, stored lower-cased and unique when present.</summary>
+    public string? Email { get; private set; } = email;
 
     [JsonIgnore] public string PasswordHash { get; private set; } = passwordHash;
 
