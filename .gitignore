@@ -36,3 +36,6 @@ _ReSharper.*/
 TestResults/
 msbuild.log
 msbuild.err
+
+## Código generado por Reqnroll a partir de los archivos .feature
+*.feature.cs

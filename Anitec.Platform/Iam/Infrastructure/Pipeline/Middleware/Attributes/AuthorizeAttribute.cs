@@ -48,6 +48,7 @@ public class AuthorizeAttribute : Attribute, IAuthorizationFilter
         }
 
         if (_roles.Length > 0 && !_roles.Any(role => role.Equals(user.Role, StringComparison.OrdinalIgnoreCase)))
-            context.Result = new ForbidResult();
+            // ForbidResult needs an authentication scheme, which this API does not register, and ends in a 500.
+            context.Result = new StatusCodeResult(StatusCodes.Status403Forbidden);
     }
 }

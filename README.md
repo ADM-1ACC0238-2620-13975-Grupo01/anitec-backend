@@ -141,3 +141,17 @@ Para comprobar que el backend compila:
 cd C:\Users\melga\Desktop\TrabajoFinalAppWeb\anitec-backend
 dotnet build
 ```
+
+## Pruebas
+
+El proyecto `Anitec.Platform.Tests` (xUnit) contiene tres tipos de pruebas. No necesitan MySQL ni Docker: las de integración y BDD arrancan la API en memoria con una base SQLite (`ASPNETCORE_ENVIRONMENT=Testing`).
+
+| Tipo | Carpeta | Qué verifica |
+|---|---|---|
+| Unitarias | `Unit/` | Servicios de aplicación (IAM y Livestock), generación y validación de JWT y hash de contraseñas, con repositorios simulados (NSubstitute). |
+| Integración | `Integration/` | Endpoints REST reales: autenticación, fincas, corrales, animales (incluidas las operaciones masivas), registros sanitarios y control de acceso por rol. |
+| BDD | `Bdd/Features/` | Escenarios Gherkin (`.feature`) ejecutados con Reqnroll sobre la API en memoria. |
+
+```powershell
+dotnet test
+```

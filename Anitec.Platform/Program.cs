@@ -246,7 +246,11 @@ using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     var context = services.GetRequiredService<AppDbContext>();
-    context.Database.Migrate();
+    // The integration tests run on an in-memory SQLite database, where the MySQL migrations do not apply.
+    if (app.Environment.IsEnvironment("Testing"))
+        context.Database.EnsureCreated();
+    else
+        context.Database.Migrate();
 
     if (app.Environment.IsDevelopment())
     {
@@ -280,3 +284,6 @@ if (!app.Environment.IsProduction())
 app.UseAuthorization();
 app.MapControllers();
 app.Run();
+
+// Exposes the entry point to the integration test project (WebApplicationFactory<Program>).
+public partial class Program;
