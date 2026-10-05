@@ -11,6 +11,10 @@ using Swashbuckle.AspNetCore.Annotations;
 
 namespace Anitec.Platform.Sanitary.Interfaces.Rest;
 
+/// <summary>
+/// REST API for sanitary/health events on animals (vaccinations, treatments, diagnoses, etc.).
+/// Available to Rancher and Veterinarian roles.
+/// </summary>
 [Authorize("Rancher", "Veterinarian")]
 [ApiController]
 [Route("api/v1/health-events")]
@@ -20,6 +24,7 @@ public class HealthEventsController(
     IHealthEventCommandService commandService,
     IHealthEventQueryService queryService) : ControllerBase
 {
+    /// <summary>Lists all health events.</summary>
     [HttpGet]
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
     {
@@ -27,6 +32,7 @@ public class HealthEventsController(
         return Ok(result.Select(HealthEventResourceFromEntityAssembler.ToResourceFromEntity));
     }
 
+    /// <summary>Gets one health event by id.</summary>
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
     {
@@ -35,6 +41,7 @@ public class HealthEventsController(
         return Ok(HealthEventResourceFromEntityAssembler.ToResourceFromEntity(result));
     }
 
+    /// <summary>Creates a new health event.</summary>
     [HttpPost]
     public async Task<IActionResult> Create(CreateHealthEventResource resource, CancellationToken cancellationToken)
     {
@@ -44,6 +51,7 @@ public class HealthEventsController(
             HealthEventResourceFromEntityAssembler.ToResourceFromEntity(result.Value));
     }
 
+    /// <summary>Updates an existing health event by id.</summary>
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, CreateHealthEventResource resource, CancellationToken cancellationToken)
     {
@@ -53,6 +61,7 @@ public class HealthEventsController(
         return Ok(HealthEventResourceFromEntityAssembler.ToResourceFromEntity(result.Value!));
     }
 
+    /// <summary>Deletes a health event by id.</summary>
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
