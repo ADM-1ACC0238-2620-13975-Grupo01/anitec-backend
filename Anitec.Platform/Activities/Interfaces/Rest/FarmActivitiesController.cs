@@ -11,6 +11,10 @@ using Swashbuckle.AspNetCore.Annotations;
 
 namespace Anitec.Platform.Activities.Interfaces.Rest;
 
+/// <summary>
+/// REST API for farm activities/events (scheduled or logged work on the farm).
+/// Route is api/v1/farm-events. Available to Rancher and Veterinarian.
+/// </summary>
 [Authorize("Rancher", "Veterinarian")]
 [ApiController]
 [Route("api/v1/farm-events")]
@@ -20,6 +24,7 @@ public class FarmActivitiesController(
     IFarmActivityCommandService commandService,
     IFarmActivityQueryService queryService) : ControllerBase
 {
+    /// <summary>Lists all farm activities.</summary>
     [HttpGet]
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
     {
@@ -27,6 +32,7 @@ public class FarmActivitiesController(
         return Ok(result.Select(FarmActivityResourceFromEntityAssembler.ToResourceFromEntity));
     }
 
+    /// <summary>Gets one farm activity by id.</summary>
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
     {
@@ -35,6 +41,7 @@ public class FarmActivitiesController(
         return Ok(FarmActivityResourceFromEntityAssembler.ToResourceFromEntity(result));
     }
 
+    /// <summary>Creates a new farm activity.</summary>
     [HttpPost]
     public async Task<IActionResult> Create(CreateFarmActivityResource resource, CancellationToken cancellationToken)
     {
@@ -44,6 +51,7 @@ public class FarmActivitiesController(
             FarmActivityResourceFromEntityAssembler.ToResourceFromEntity(result.Value));
     }
 
+    /// <summary>Updates an existing farm activity by id.</summary>
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, CreateFarmActivityResource resource, CancellationToken cancellationToken)
     {
@@ -53,6 +61,7 @@ public class FarmActivitiesController(
         return Ok(FarmActivityResourceFromEntityAssembler.ToResourceFromEntity(result.Value!));
     }
 
+    /// <summary>Deletes a farm activity by id.</summary>
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
