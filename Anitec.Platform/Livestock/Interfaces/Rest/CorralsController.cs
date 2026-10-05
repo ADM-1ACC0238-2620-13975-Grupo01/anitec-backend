@@ -11,6 +11,10 @@ using Swashbuckle.AspNetCore.Annotations;
 
 namespace Anitec.Platform.Livestock.Interfaces.Rest;
 
+/// <summary>
+/// REST API for corrals (pens) within a herd.
+/// Readable by Rancher and Veterinarian; create/update/delete require Rancher.
+/// </summary>
 [Authorize("Rancher", "Veterinarian")]
 [ApiController]
 [Route("api/v1/corrals")]
@@ -20,6 +24,7 @@ public class CorralsController(
     ICorralCommandService commandService,
     ICorralQueryService queryService) : ControllerBase
 {
+    /// <summary>Lists all corrals.</summary>
     [HttpGet]
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
     {
@@ -27,6 +32,9 @@ public class CorralsController(
         return Ok(result.Select(CorralResourceFromEntityAssembler.ToResourceFromEntity));
     }
 
+    /// <summary>Gets one corral by id.</summary>
+    /// <param name="id">Corral primary key.</param>
+    /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
     {
@@ -35,6 +43,7 @@ public class CorralsController(
         return Ok(CorralResourceFromEntityAssembler.ToResourceFromEntity(result));
     }
 
+    /// <summary>Creates a corral linked to a herd. Requires a non-empty name and valid HerdId.</summary>
     [Authorize("Rancher")]
     [HttpPost]
     public async Task<IActionResult> Create(CreateCorralResource resource, CancellationToken cancellationToken)
@@ -49,6 +58,7 @@ public class CorralsController(
             CorralResourceFromEntityAssembler.ToResourceFromEntity(result.Value));
     }
 
+    /// <summary>Updates an existing corral by id. Rancher role only.</summary>
     [Authorize("Rancher")]
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, CreateCorralResource resource, CancellationToken cancellationToken)
@@ -59,6 +69,7 @@ public class CorralsController(
         return Ok(CorralResourceFromEntityAssembler.ToResourceFromEntity(result.Value!));
     }
 
+    /// <summary>Deletes a corral by id. Rancher role only.</summary>
     [Authorize("Rancher")]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
