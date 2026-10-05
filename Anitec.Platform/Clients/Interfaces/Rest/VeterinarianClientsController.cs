@@ -17,6 +17,11 @@ using Swashbuckle.AspNetCore.Annotations;
 
 namespace Anitec.Platform.Clients.Interfaces.Rest;
 
+/// <summary>
+/// REST API for veterinarian–rancher client relationships.
+/// Veterinarian-only: list clients, list available ranchers, add/remove clients.
+/// Enriches responses with herd and animal counts per rancher.
+/// </summary>
 [Authorize("Veterinarian")]
 [ApiController]
 [Route("api/v1/veterinarian")]
@@ -29,6 +34,7 @@ public class VeterinarianClientsController(
     IHerdQueryService herdQueryService,
     IAnimalQueryService animalQueryService) : ControllerBase
 {
+    /// <summary>Lists ranchers already linked as clients of the given veterinarian.</summary>
     [HttpGet("{veterinarianId:int}/clients")]
     public async Task<IActionResult> GetClients(int veterinarianId, CancellationToken cancellationToken)
     {
@@ -48,6 +54,10 @@ public class VeterinarianClientsController(
         return Ok(resources);
     }
 
+    /// <summary>
+    /// Lists ranchers who are not yet clients of this veterinarian
+    /// (candidates to invite/add), including herd and animal counts.
+    /// </summary>
     [HttpGet("{veterinarianId:int}/available-ranchers")]
     public async Task<IActionResult> GetAvailableRanchers(int veterinarianId, CancellationToken cancellationToken)
     {
@@ -77,6 +87,7 @@ public class VeterinarianClientsController(
         return Ok(resources);
     }
 
+    /// <summary>Links a rancher as a client of the veterinarian. Returns 409 on conflict.</summary>
     [HttpPost("{veterinarianId:int}/clients/{rancherId:int}")]
     public async Task<IActionResult> AddClient(int veterinarianId, int rancherId, CancellationToken cancellationToken)
     {
@@ -89,6 +100,7 @@ public class VeterinarianClientsController(
         return CreatedAtAction(nameof(GetClients), new { veterinarianId }, result.Value);
     }
 
+    /// <summary>Removes the veterinarian–rancher client link.</summary>
     [HttpDelete("{veterinarianId:int}/clients/{rancherId:int}")]
     public async Task<IActionResult> RemoveClient(int veterinarianId, int rancherId, CancellationToken cancellationToken)
     {
@@ -101,6 +113,10 @@ public class VeterinarianClientsController(
         return NoContent();
     }
 
+    /// <summary>
+    /// Maps a relationship entity plus related herds/animals into the API client resource
+    /// (includes herd count and animal count for the rancher).
+    /// </summary>
     private static VeterinarianClientResource ToClientResource(
         VeterinarianClient relationship,
         User? rancher,
