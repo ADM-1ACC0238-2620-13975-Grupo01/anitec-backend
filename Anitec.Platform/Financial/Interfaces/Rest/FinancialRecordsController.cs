@@ -11,7 +11,10 @@ using Swashbuckle.AspNetCore.Annotations;
 
 namespace Anitec.Platform.Financial.Interfaces.Rest;
 
-
+/// <summary>
+/// REST API for financial records (income/expense tracking for the ranch).
+/// Restricted to Rancher role only.
+/// </summary>
 [Authorize("Rancher")]
 [ApiController]
 [Route("api/v1/financial-records")]
@@ -21,6 +24,7 @@ public class FinancialRecordsController(
     IFinancialRecordCommandService commandService,
     IFinancialRecordQueryService queryService) : ControllerBase
 {
+    /// <summary>Lists all financial records.</summary>
     [HttpGet]
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
     {
@@ -28,6 +32,7 @@ public class FinancialRecordsController(
         return Ok(result.Select(FinancialRecordResourceFromEntityAssembler.ToResourceFromEntity));
     }
 
+    /// <summary>Gets one financial record by id.</summary>
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
     {
@@ -36,6 +41,7 @@ public class FinancialRecordsController(
         return Ok(FinancialRecordResourceFromEntityAssembler.ToResourceFromEntity(result));
     }
 
+    /// <summary>Creates a new financial record.</summary>
     [HttpPost]
     public async Task<IActionResult> Create(CreateFinancialRecordResource resource, CancellationToken cancellationToken)
     {
@@ -45,6 +51,7 @@ public class FinancialRecordsController(
             FinancialRecordResourceFromEntityAssembler.ToResourceFromEntity(result.Value));
     }
 
+    /// <summary>Updates an existing financial record by id.</summary>
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, CreateFinancialRecordResource resource, CancellationToken cancellationToken)
     {
@@ -54,6 +61,7 @@ public class FinancialRecordsController(
         return Ok(FinancialRecordResourceFromEntityAssembler.ToResourceFromEntity(result.Value!));
     }
 
+    /// <summary>Deletes a financial record by id.</summary>
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
