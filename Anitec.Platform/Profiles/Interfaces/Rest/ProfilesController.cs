@@ -17,6 +17,10 @@ using Swashbuckle.AspNetCore.Annotations;
 
 namespace Anitec.Platform.Profiles.Interfaces.Rest;
 
+/// <summary>
+/// REST API for user profiles (personal data linked to an IAM account).
+/// Available to Rancher and Veterinarian roles.
+/// </summary>
 [Authorize("Rancher", "Veterinarian")]
 [ApiController]
 [Route("api/v1/[controller]")]
@@ -32,6 +36,7 @@ public class ProfilesController(
     private readonly IStringLocalizer<ErrorMessages> _errorLocalizer = errorLocalizer;
     private readonly ProblemDetailsFactory _problemDetailsFactory = problemDetailsFactory;
 
+    /// <summary>Returns a profile by its unique identifier, or a ProblemDetails 404 when missing.</summary>
     [HttpGet("{profileId:int}")]
     [SwaggerOperation("Get Profile by Id", "Get a profile by its unique identifier.", OperationId = "GetProfileById")]
     [SwaggerResponse(200, "The profile was found and returned.", typeof(ProfileResource))]
@@ -50,6 +55,7 @@ public class ProfilesController(
         );
     }
 
+    /// <summary>Creates a new profile and returns 201 with the created resource.</summary>
     [HttpPost]
     [SwaggerOperation("Create Profile", "Create a new profile.", OperationId = "CreateProfile")]
     [SwaggerResponse(201, "The profile was created.", typeof(ProfileResource))]
@@ -69,6 +75,7 @@ public class ProfilesController(
         );
     }
 
+    /// <summary>Lists every profile in the system.</summary>
     [HttpGet]
     [SwaggerOperation("Get All Profiles", "Get all profiles.", OperationId = "GetAllProfiles")]
     [SwaggerResponse(200, "The profiles were found and returned.", typeof(IEnumerable<ProfileResource>))]
