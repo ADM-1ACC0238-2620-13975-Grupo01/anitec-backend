@@ -11,6 +11,10 @@ using Swashbuckle.AspNetCore.Annotations;
 
 namespace Anitec.Platform.Metrics.Interfaces.Rest;
 
+/// <summary>
+/// REST API for device metrics (sensor readings recorded from farm devices).
+/// Available to Rancher and Veterinarian roles.
+/// </summary>
 [Authorize("Rancher", "Veterinarian")]
 [ApiController]
 [Route("api/v1/device-metrics")]
@@ -20,6 +24,7 @@ public class DeviceMetricsController(
     IDeviceMetricCommandService commandService,
     IDeviceMetricQueryService queryService) : ControllerBase
 {
+    /// <summary>Lists all device metrics.</summary>
     [HttpGet]
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
     {
@@ -27,6 +32,7 @@ public class DeviceMetricsController(
         return Ok(result.Select(DeviceMetricResourceFromEntityAssembler.ToResourceFromEntity));
     }
 
+    /// <summary>Gets one device metric by id.</summary>
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
     {
@@ -35,6 +41,7 @@ public class DeviceMetricsController(
         return Ok(DeviceMetricResourceFromEntityAssembler.ToResourceFromEntity(result));
     }
 
+    /// <summary>Creates a new device metric reading.</summary>
     [HttpPost]
     public async Task<IActionResult> Create(CreateDeviceMetricResource resource, CancellationToken cancellationToken)
     {
@@ -44,6 +51,7 @@ public class DeviceMetricsController(
             DeviceMetricResourceFromEntityAssembler.ToResourceFromEntity(result.Value));
     }
 
+    /// <summary>Updates an existing device metric by id.</summary>
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, CreateDeviceMetricResource resource, CancellationToken cancellationToken)
     {
@@ -53,6 +61,7 @@ public class DeviceMetricsController(
         return Ok(DeviceMetricResourceFromEntityAssembler.ToResourceFromEntity(result.Value!));
     }
 
+    /// <summary>Deletes a device metric by id.</summary>
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
