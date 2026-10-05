@@ -14,6 +14,11 @@ using Swashbuckle.AspNetCore.Annotations;
 
 namespace Anitec.Platform.Devices.Interfaces.Rest;
 
+/// <summary>
+/// REST API for IoT/monitoring devices assigned to the farm.
+/// Also exposes per-device metric listings (all metrics and latest metric).
+/// Readable by Rancher and Veterinarian; mutations require Rancher.
+/// </summary>
 [Authorize("Rancher", "Veterinarian")]
 [ApiController]
 [Route("api/v1/devices")]
@@ -24,6 +29,7 @@ public class DevicesController(
     IDeviceQueryService queryService,
     IDeviceMetricQueryService metricQueryService) : ControllerBase
 {
+    /// <summary>Lists all registered devices.</summary>
     [HttpGet]
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
     {
@@ -31,6 +37,7 @@ public class DevicesController(
         return Ok(result.Select(DeviceResourceFromEntityAssembler.ToResourceFromEntity));
     }
 
+    /// <summary>Gets one device by id.</summary>
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
     {
@@ -39,6 +46,7 @@ public class DevicesController(
         return Ok(DeviceResourceFromEntityAssembler.ToResourceFromEntity(result));
     }
 
+    /// <summary>Registers a new device. Rancher role only.</summary>
     [Authorize("Rancher")]
     [HttpPost]
     public async Task<IActionResult> Create(CreateDeviceResource resource, CancellationToken cancellationToken)
@@ -49,6 +57,7 @@ public class DevicesController(
             DeviceResourceFromEntityAssembler.ToResourceFromEntity(result.Value));
     }
 
+    /// <summary>Updates an existing device by id. Rancher role only.</summary>
     [Authorize("Rancher")]
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, CreateDeviceResource resource, CancellationToken cancellationToken)
@@ -59,6 +68,7 @@ public class DevicesController(
         return Ok(DeviceResourceFromEntityAssembler.ToResourceFromEntity(result.Value!));
     }
 
+    /// <summary>Deletes a device by id. Rancher role only.</summary>
     [Authorize("Rancher")]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
@@ -68,6 +78,10 @@ public class DevicesController(
         return NoContent();
     }
 
+    /// <summary>
+    /// Returns all metrics for a device, newest first.
+    /// Returns 404 if the device does not exist.
+    /// </summary>
     [HttpGet("{id:int}/metrics")]
     public async Task<IActionResult> GetMetricsByDevice(int id, CancellationToken cancellationToken)
     {
@@ -81,6 +95,10 @@ public class DevicesController(
             .Select(DeviceMetricResourceFromEntityAssembler.ToResourceFromEntity));
     }
 
+    /// <summary>
+    /// Returns the most recent metric for a device.
+    /// Returns 404 if the device or any metric is missing.
+    /// </summary>
     [HttpGet("{id:int}/latest-metric")]
     public async Task<IActionResult> GetLatestMetricByDevice(int id, CancellationToken cancellationToken)
     {
