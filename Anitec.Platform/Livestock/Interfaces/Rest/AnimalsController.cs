@@ -11,6 +11,10 @@ using Swashbuckle.AspNetCore.Annotations;
 
 namespace Anitec.Platform.Livestock.Interfaces.Rest;
 
+/// <summary>
+/// REST API for livestock animals (CRUD, bulk ops, and image upload).
+/// Accessible by Rancher and Veterinarian roles; write operations require Rancher.
+/// </summary>
 [Authorize("Rancher", "Veterinarian")]
 [ApiController]
 [Route("api/v1/animals")]
@@ -21,7 +25,10 @@ public class AnimalsController(
     IAnimalQueryService queryService,
     IWebHostEnvironment webHostEnvironment) : ControllerBase
 {
+    /// <summary>MIME types accepted when uploading an animal image.</summary>
     private static readonly string[] AllowedImageContentTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+
+    /// <summary>Returns every animal registered in the system.</summary>
     [HttpGet]
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
     {
@@ -29,6 +36,9 @@ public class AnimalsController(
         return Ok(result.Select(AnimalResourceFromEntityAssembler.ToResourceFromEntity));
     }
 
+    /// <summary>Returns a single animal by its identifier.</summary>
+    /// <param name="id">Animal primary key.</param>
+    /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
     {
@@ -37,6 +47,9 @@ public class AnimalsController(
         return Ok(AnimalResourceFromEntityAssembler.ToResourceFromEntity(result));
     }
 
+    /// <summary>Creates a new animal. Rancher role only.</summary>
+    /// <param name="resource">Animal payload from the client.</param>
+    /// <param name="cancellationToken">Request cancellation token.</param>
     [Authorize("Rancher")]
     [HttpPost]
     public async Task<IActionResult> Create(CreateAnimalResource resource, CancellationToken cancellationToken)
@@ -50,6 +63,10 @@ public class AnimalsController(
             AnimalResourceFromEntityAssembler.ToResourceFromEntity(result.Value));
     }
 
+    /// <summary>Updates an existing animal by id. Rancher role only.</summary>
+    /// <param name="id">Animal primary key to update.</param>
+    /// <param name="resource">Updated animal payload.</param>
+    /// <param name="cancellationToken">Request cancellation token.</param>
     [Authorize("Rancher")]
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, CreateAnimalResource resource, CancellationToken cancellationToken)
@@ -63,6 +80,10 @@ public class AnimalsController(
         return Ok(AnimalResourceFromEntityAssembler.ToResourceFromEntity(result.Value!));
     }
 
+    /// <summary>
+    /// Validates required fields and basic constraints on a create/update animal payload.
+    /// Returns a list of human-readable error messages (empty when valid).
+    /// </summary>
     private static List<string> ValidateAnimalResource(CreateAnimalResource resource)
     {
         var errors = new List<string>();
@@ -77,6 +98,9 @@ public class AnimalsController(
         return errors;
     }
 
+    /// <summary>Deletes an animal by id. Rancher role only.</summary>
+    /// <param name="id">Animal primary key to delete.</param>
+    /// <param name="cancellationToken">Request cancellation token.</param>
     [Authorize("Rancher")]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
@@ -86,6 +110,10 @@ public class AnimalsController(
         return NoContent();
     }
 
+    /// <summary>
+    /// Creates multiple animals in one request (same species/breed/gender/herd/corral).
+    /// Quantity must be between 1 and 500. Rancher role only.
+    /// </summary>
     [Authorize("Rancher")]
     [HttpPost("bulk")]
     public async Task<IActionResult> CreateBatch(CreateAnimalBatchResource resource, CancellationToken cancellationToken)
@@ -106,6 +134,7 @@ public class AnimalsController(
         return Created(string.Empty, result.Value!.Select(AnimalResourceFromEntityAssembler.ToResourceFromEntity));
     }
 
+    /// <summary>Updates the status of many animals at once. Rancher role only.</summary>
     [Authorize("Rancher")]
     [HttpPatch("bulk-status")]
     public async Task<IActionResult> UpdateBulkStatus(UpdateAnimalsStatusResource resource, CancellationToken cancellationToken)
@@ -120,6 +149,7 @@ public class AnimalsController(
         return Ok(result.Value!.Select(AnimalResourceFromEntityAssembler.ToResourceFromEntity));
     }
 
+    /// <summary>Deletes many animals by id list. Rancher role only.</summary>
     [Authorize("Rancher")]
     [HttpDelete("bulk")]
     public async Task<IActionResult> DeleteBatch(DeleteAnimalsResource resource, CancellationToken cancellationToken)
@@ -132,6 +162,10 @@ public class AnimalsController(
         return NoContent();
     }
 
+    /// <summary>
+    /// Uploads an animal image to wwwroot/uploads/animals and returns its public URL.
+    /// Max size 10 MB; only JPEG, PNG, WEBP, or GIF. Rancher role only.
+    /// </summary>
     [Authorize("Rancher")]
     [HttpPost("upload-image")]
     [RequestSizeLimit(10_000_000)]
