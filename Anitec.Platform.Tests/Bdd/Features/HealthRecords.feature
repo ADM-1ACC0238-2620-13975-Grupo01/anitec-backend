@@ -14,11 +14,17 @@ Feature: Health records
     Then the health event is created
     And the health record of the animal "COW-001" includes the description "Cojera en la pata trasera"
 
-  Scenario: A veterinarian records a treatment
+  Scenario: A veterinarian records a treatment for a client
     Given I am signed in as a "Veterinarian"
+    And I am a client of the rancher
     When I record a "Tratamiento" health event for the animal "COW-001" with the description "Antibiótico por 5 días"
     Then the health event is created
     And the health record of the animal "COW-001" includes the description "Antibiótico por 5 días"
+
+  Scenario: A veterinarian cannot record a treatment for a rancher who is not their client
+    Given I am signed in as a "Veterinarian"
+    When I record a "Tratamiento" health event for the animal "COW-001" with the description "Antibiótico por 5 días"
+    Then the request is rejected with status 403
 
   Scenario: Health records require a session
     Given I am a new visitor

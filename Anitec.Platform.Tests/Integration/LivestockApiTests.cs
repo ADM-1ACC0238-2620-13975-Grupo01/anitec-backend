@@ -213,6 +213,68 @@ public class LivestockApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.Equal(HttpStatusCode.NotFound, (await rancher.Http.GetAsync($"/api/v1/animals/{second}")).StatusCode);
     }
 
+    // ---------- Archive ----------
+
+    [Fact]
+    public async Task ArchiveAnAnimal_KeepsItAndLeavesItOutOfTheActiveList()
+    {
+        var rancher = await Rancher();
+        var herdId = await rancher.CreateHerdAsync();
+        var kept = await rancher.CreateAnimalAsync(herdId, null, "ARC-1");
+        var archived = await rancher.CreateAnimalAsync(herdId, null, "ARC-2");
+
+        var response = await rancher.Http.PatchAsJsonAsync($"/api/v1/animals/{archived}/status", new { status = "Archivado" });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("Archivado", (await rancher.ReadAsync(response)).GetProperty("status").GetString());
+        Assert.Equal(HttpStatusCode.OK, (await rancher.Http.GetAsync($"/api/v1/animals/{archived}")).StatusCode);
+
+        async Task<List<int>> ListAsync(string query) =>
+            (await rancher.ReadAsync(await rancher.Http.GetAsync("/api/v1/animals" + query))).EnumerateArray()
+            .Select(a => a.GetProperty("id").GetInt32()).ToList();
+
+        var all = await ListAsync("");
+        Assert.Contains(kept, all);
+        Assert.Contains(archived, all);
+        var active = await ListAsync("?archived=false");
+        Assert.Contains(kept, active);
+        Assert.DoesNotContain(archived, active);
+        Assert.Equal([archived], (await ListAsync("?archived=true")).Intersect([kept, archived]));
+    }
+
+    [Fact]
+    public async Task RestoreAnArchivedAnimal_PutsItBackInTheActiveList()
+    {
+        var rancher = await Rancher();
+        var animalId = await rancher.CreateAnimalAsync(await rancher.CreateHerdAsync(), null, "ARC-3");
+        await rancher.Http.PatchAsJsonAsync($"/api/v1/animals/{animalId}/status", new { status = "Archivado" });
+
+        var restore = await rancher.Http.PatchAsJsonAsync($"/api/v1/animals/{animalId}/status", new { status = "Saludable" });
+
+        Assert.Equal(HttpStatusCode.OK, restore.StatusCode);
+        var active = await rancher.ReadAsync(await rancher.Http.GetAsync("/api/v1/animals?archived=false"));
+        Assert.Contains(active.EnumerateArray(), a => a.GetProperty("id").GetInt32() == animalId);
+    }
+
+    [Fact]
+    public async Task ChangeTheStatusOfOneAnimal_ValidatesTheRequest()
+    {
+        var rancher = await Rancher();
+        var animalId = await rancher.CreateAnimalAsync(await rancher.CreateHerdAsync(), null, "ARC-4");
+        var other = await Rancher();
+        var vet = await ApiTestClient.SignedInAsync(factory.CreateClient(), "Veterinarian");
+
+        var empty = await rancher.Http.PatchAsJsonAsync($"/api/v1/animals/{animalId}/status", new { status = "" });
+        var missing = await rancher.Http.PatchAsJsonAsync("/api/v1/animals/999999/status", new { status = "Archivado" });
+        var foreign = await other.Http.PatchAsJsonAsync($"/api/v1/animals/{animalId}/status", new { status = "Archivado" });
+        var asVet = await vet.Http.PatchAsJsonAsync($"/api/v1/animals/{animalId}/status", new { status = "Archivado" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, empty.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, missing.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, foreign.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, asVet.StatusCode);
+    }
+
     // ---------- Roles ----------
 
     [Fact]

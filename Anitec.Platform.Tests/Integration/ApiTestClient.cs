@@ -38,6 +38,13 @@ public class ApiTestClient(HttpClient http)
     public async Task<JsonElement> ReadAsync(HttpResponseMessage response) =>
         await response.Content.ReadFromJsonAsync<JsonElement>();
 
+    /// <summary>As a veterinarian, links the rancher as one of this user's clients.</summary>
+    public async Task AddClientAsync(int rancherId)
+    {
+        var response = await Http.PostAsync($"/api/v1/veterinarian/{UserId}/clients/{rancherId}", null);
+        response.EnsureSuccessStatusCode();
+    }
+
     /// <summary>Creates a farm owned by this user and returns its id.</summary>
     public async Task<int> CreateHerdAsync(string name = "La Esperanza")
     {

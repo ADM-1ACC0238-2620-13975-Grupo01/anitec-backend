@@ -34,6 +34,13 @@ public class CommonSteps(ApiScenarioContext ctx)
         if (role == "Rancher") ctx.Rancher = ctx.User;
     }
 
+    [Given("I am signed in as another {string}")]
+    public async Task GivenIAmSignedInAsAnother(string role) =>
+        ctx.User = await ApiTestClient.SignedInAsync(SharedApi.Factory.CreateClient(), role);
+
+    [Given("I am a client of the rancher")]
+    public async Task GivenIAmAClientOfTheRancher() => await ctx.User!.AddClientAsync(ctx.Rancher!.UserId);
+
     [When("I sign up as a {string}")]
     public async Task WhenISignUpAs(string role) => await SignUpAsync(role);
 

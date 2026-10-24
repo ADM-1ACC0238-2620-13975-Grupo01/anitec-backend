@@ -70,9 +70,22 @@ public class HealthEventsApiTests(ApiFactory factory) : IClassFixture<ApiFactory
         var rancher = await ApiTestClient.SignedInAsync(factory.CreateClient());
         var animalId = await rancher.CreateAnimalAsync(await rancher.CreateHerdAsync(), null);
         var vet = await ApiTestClient.SignedInAsync(factory.CreateClient(), "Veterinarian");
+        await vet.AddClientAsync(rancher.UserId);
 
         var response = await vet.Http.PostAsJsonAsync("/api/v1/health-events", NewEvent(animalId, "Tratamiento"));
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task AVeterinarian_CannotRecordAHealthEventForAnAnimalOfAStranger()
+    {
+        var rancher = await ApiTestClient.SignedInAsync(factory.CreateClient());
+        var animalId = await rancher.CreateAnimalAsync(await rancher.CreateHerdAsync(), null);
+        var vet = await ApiTestClient.SignedInAsync(factory.CreateClient(), "Veterinarian");
+
+        var response = await vet.Http.PostAsJsonAsync("/api/v1/health-events", NewEvent(animalId, "Tratamiento"));
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 }

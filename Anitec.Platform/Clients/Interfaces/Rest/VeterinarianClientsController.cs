@@ -9,6 +9,7 @@ using Anitec.Platform.Iam.Application.QueryServices;
 using Anitec.Platform.Iam.Domain.Model.Aggregates;
 using Anitec.Platform.Iam.Domain.Model.Queries;
 using Anitec.Platform.Iam.Infrastructure.Pipeline.Middleware.Attributes;
+using Anitec.Platform.Shared.Interfaces.Rest;
 using Anitec.Platform.Livestock.Application.QueryServices;
 using Anitec.Platform.Livestock.Domain.Model.Entities;
 using Anitec.Platform.Livestock.Domain.Model.Queries;
@@ -21,6 +22,7 @@ namespace Anitec.Platform.Clients.Interfaces.Rest;
 /// REST API for veterinarian–rancher client relationships.
 /// Veterinarian-only: list clients, list available ranchers, add/remove clients.
 /// Enriches responses with herd and animal counts per rancher.
+/// A veterinarian can only manage their own client list; any other veterinarian id answers 403.
 /// </summary>
 [Authorize("Veterinarian")]
 [ApiController]
@@ -38,6 +40,8 @@ public class VeterinarianClientsController(
     [HttpGet("{veterinarianId:int}/clients")]
     public async Task<IActionResult> GetClients(int veterinarianId, CancellationToken cancellationToken)
     {
+        if (veterinarianId != this.CurrentUser().Id) return this.Forbidden();
+
         var relationships = await queryService.Handle(
             new GetVeterinarianClientsByVeterinarianIdQuery(veterinarianId),
             cancellationToken);
@@ -61,6 +65,8 @@ public class VeterinarianClientsController(
     [HttpGet("{veterinarianId:int}/available-ranchers")]
     public async Task<IActionResult> GetAvailableRanchers(int veterinarianId, CancellationToken cancellationToken)
     {
+        if (veterinarianId != this.CurrentUser().Id) return this.Forbidden();
+
         var relationships = await queryService.Handle(
             new GetVeterinarianClientsByVeterinarianIdQuery(veterinarianId),
             cancellationToken);
@@ -91,6 +97,8 @@ public class VeterinarianClientsController(
     [HttpPost("{veterinarianId:int}/clients/{rancherId:int}")]
     public async Task<IActionResult> AddClient(int veterinarianId, int rancherId, CancellationToken cancellationToken)
     {
+        if (veterinarianId != this.CurrentUser().Id) return this.Forbidden();
+
         var result = await commandService.Handle(
             new CreateVeterinarianClientCommand(veterinarianId, rancherId),
             cancellationToken);
@@ -104,6 +112,8 @@ public class VeterinarianClientsController(
     [HttpDelete("{veterinarianId:int}/clients/{rancherId:int}")]
     public async Task<IActionResult> RemoveClient(int veterinarianId, int rancherId, CancellationToken cancellationToken)
     {
+        if (veterinarianId != this.CurrentUser().Id) return this.Forbidden();
+
         var result = await commandService.Handle(
             new DeleteVeterinarianClientCommand(veterinarianId, rancherId),
             cancellationToken);

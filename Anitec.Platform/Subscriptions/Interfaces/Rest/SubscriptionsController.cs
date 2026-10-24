@@ -7,6 +7,7 @@ using Anitec.Platform.Subscriptions.Interfaces.Rest.Resources;
 using Anitec.Platform.Subscriptions.Interfaces.Rest.Transform;
 using Anitec.Platform.Iam.Domain.Model.Aggregates;
 using Anitec.Platform.Iam.Infrastructure.Pipeline.Middleware.Attributes;
+using Anitec.Platform.Shared.Interfaces.Rest;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 using Stripe;
@@ -14,6 +15,11 @@ using Stripe.Checkout;
 
 namespace Anitec.Platform.Subscriptions.Interfaces.Rest;
 
+/// <summary>
+/// Subscriptions and their Stripe checkout. Each user only reaches their own subscriptions and payments;
+/// anything else answers 403. Creating or editing subscriptions by hand and the mock checkout only exist
+/// outside production, where the Stripe checkout is the only way to subscribe.
+/// </summary>
 [Authorize("Rancher", "Veterinarian")]
 [ApiController]
 [Route("api/v1/subscriptions")]
@@ -30,8 +36,10 @@ public class SubscriptionsController(
     [HttpGet]
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
     {
+        var userId = this.CurrentUser().Id;
         var result = await queryService.Handle(new GetAllSubscriptionsQuery(), cancellationToken);
-        return Ok(result.Select(SubscriptionResourceFromEntityAssembler.ToResourceFromEntity));
+        return Ok(result.Where(item => item.UserId == userId)
+            .Select(SubscriptionResourceFromEntityAssembler.ToResourceFromEntity));
     }
 
     [HttpGet("{id:int}")]
@@ -39,12 +47,16 @@ public class SubscriptionsController(
     {
         var result = await queryService.Handle(new GetSubscriptionByIdQuery(id), cancellationToken);
         if (result is null) return NotFound();
+        if (result.UserId != this.CurrentUser().Id) return this.Forbidden();
         return Ok(SubscriptionResourceFromEntityAssembler.ToResourceFromEntity(result));
     }
 
     [HttpPost]
     public async Task<IActionResult> Create(CreateSubscriptionResource resource, CancellationToken cancellationToken)
     {
+        if (this.IsProduction()) return NotFound();
+        if (resource.UserId != this.CurrentUser().Id) return this.Forbidden();
+
         var command = CreateSubscriptionCommandFromResourceAssembler.ToCommandFromResource(resource);
         var result = await commandService.Handle(command, cancellationToken);
         return CreatedAtAction(nameof(GetById), new { id = result.Value!.Id },
@@ -54,6 +66,8 @@ public class SubscriptionsController(
     [HttpGet("users/{userId:int}/active")]
     public async Task<IActionResult> GetActiveByUser(int userId, CancellationToken cancellationToken)
     {
+        if (userId != this.CurrentUser().Id) return this.Forbidden();
+
         var subscriptions = await queryService.Handle(new GetAllSubscriptionsQuery(), cancellationToken);
         var subscription = subscriptions
             .Where(item => item.UserId == userId)
@@ -69,6 +83,8 @@ public class SubscriptionsController(
     [HttpGet("users/{userId:int}/payments")]
     public async Task<IActionResult> GetPaymentsByUser(int userId, CancellationToken cancellationToken)
     {
+        if (userId != this.CurrentUser().Id) return this.Forbidden();
+
         var payments = await paymentQueryService.Handle(userId, cancellationToken);
         return Ok(payments.Select(PaymentResourceFromEntityAssembler.ToResourceFromEntity));
     }
@@ -76,6 +92,9 @@ public class SubscriptionsController(
     [HttpPost("mock-checkout")]
     public async Task<IActionResult> MockCheckout(MockCheckoutResource resource, CancellationToken cancellationToken)
     {
+        if (this.IsProduction()) return NotFound();
+        if (resource.UserId != this.CurrentUser().Id) return this.Forbidden();
+
         var subscriptionCommand = new CreateSubscriptionCommand(
             resource.UserId,
             resource.PlanId,
@@ -123,6 +142,15 @@ public class SubscriptionsController(
 
         var successUrl = configuration["StripeSettings:SuccessUrl"];
         var cancelUrl = configuration["StripeSettings:CancelUrl"];
+        if ("android".Equals(resource.Platform, StringComparison.OrdinalIgnoreCase))
+        {
+            // The app opens the checkout in a browser tab. Stripe cannot return to the app's own link scheme,
+            // so it returns to a page of this API that opens the app.
+            var returnUrl = $"{MobileReturnBaseUrl()}/api/v1/subscriptions/mobile-return";
+            successUrl = $"{returnUrl}/success?session_id={{CHECKOUT_SESSION_ID}}";
+            cancelUrl = $"{returnUrl}/cancel";
+        }
+
         if (string.IsNullOrWhiteSpace(successUrl) || string.IsNullOrWhiteSpace(cancelUrl))
             return BadRequest(new { message = "Stripe success and cancel URLs are not configured." });
 
@@ -204,7 +232,7 @@ public class SubscriptionsController(
         if (!session.Metadata.TryGetValue("userId", out var userIdValue) ||
             !int.TryParse(userIdValue, out var stripeUserId) ||
             stripeUserId != user.Id)
-            return Forbid();
+            return this.Forbidden();
 
         if (!session.Metadata.TryGetValue("planId", out var planIdValue) ||
             !int.TryParse(planIdValue, out var planId))
@@ -268,6 +296,12 @@ public class SubscriptionsController(
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, CreateSubscriptionResource resource, CancellationToken cancellationToken)
     {
+        if (this.IsProduction()) return NotFound();
+        var existing = await queryService.Handle(new GetSubscriptionByIdQuery(id), cancellationToken);
+        if (existing is null) return NotFound();
+        var userId = this.CurrentUser().Id;
+        if (existing.UserId != userId || resource.UserId != userId) return this.Forbidden();
+
         var command = UpdateSubscriptionCommandFromResourceAssembler.ToCommandFromResource(id, resource);
         var result = await commandService.Handle(command, cancellationToken);
         if (result.IsFailure) return NotFound();
@@ -277,9 +311,28 @@ public class SubscriptionsController(
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
+        var existing = await queryService.Handle(new GetSubscriptionByIdQuery(id), cancellationToken);
+        if (existing is null) return NotFound();
+        if (existing.UserId != this.CurrentUser().Id) return this.Forbidden();
+
         var result = await commandService.Handle(new DeleteSubscriptionCommand(id), cancellationToken);
         if (result.IsFailure) return NotFound();
         return NoContent();
+    }
+
+    /// <summary>
+    ///     Public address of this API, used to build the pages Stripe returns to. It comes from
+    ///     StripeSettings:MobileReturnBaseUrl when set; otherwise from the request, using https unless the
+    ///     API is reached through a local address.
+    /// </summary>
+    private string MobileReturnBaseUrl()
+    {
+        var configured = configuration["StripeSettings:MobileReturnBaseUrl"];
+        if (!string.IsNullOrWhiteSpace(configured)) return configured.TrimEnd('/');
+
+        var host = Request.Host;
+        var isLocal = host.Host is "localhost" or "127.0.0.1" or "10.0.2.2";
+        return $"{(isLocal ? Request.Scheme : "https")}://{host}";
     }
 }
 

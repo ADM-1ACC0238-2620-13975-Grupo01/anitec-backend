@@ -4,6 +4,9 @@ namespace Anitec.Platform.Livestock.Domain.Model.Entities;
 
 public class Animal
 {
+    /// <summary>Status of an animal that left the active herd but whose history is kept.</summary>
+    public const string ArchivedStatus = "Archivado";
+
     public Animal()
     {
         Tag = string.Empty;

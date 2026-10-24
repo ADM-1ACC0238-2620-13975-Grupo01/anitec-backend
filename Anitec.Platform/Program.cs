@@ -69,6 +69,7 @@ using Anitec.Platform.Sanitary.Application.Internal.QueryServices;
 using Anitec.Platform.Sanitary.Application.QueryServices;
 using Anitec.Platform.Sanitary.Domain.Repositories;
 using Anitec.Platform.Sanitary.Infrastructure.Persistence.EntityFrameworkCore.Repositories;
+using Anitec.Platform.Shared.Application.Internal.Authorization;
 using Anitec.Platform.Shared.Domain.Repositories;
 using Anitec.Platform.Shared.Infrastructure.Interfaces.AspNetCore.Configuration;
 using Anitec.Platform.Shared.Infrastructure.Mediator.Cortex.Configuration;
@@ -165,6 +166,7 @@ builder.Services.AddSwaggerGen(options =>
 
 // Shared Bounded Context
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<IAccessScopeService, AccessScopeService>();
 
 // Livestock Bounded Context
 builder.Services.AddScoped<IHerdRepository, HerdRepository>();
@@ -257,6 +259,10 @@ using (var scope = app.Services.CreateScope())
         var hashingService = services.GetRequiredService<IHashingService>();
         await AppDbContextSeeder.SeedDevelopmentDataAsync(context, hashingService);
     }
+
+    // The plans are needed in every environment; this only fills an empty table (the integration tests start empty on purpose).
+    if (!app.Environment.IsEnvironment("Testing"))
+        await AppDbContextSeeder.SeedSubscriptionPlansAsync(context);
 }
 
 app.UseGlobalExceptionHandler();

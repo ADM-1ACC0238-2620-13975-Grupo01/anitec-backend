@@ -6,11 +6,16 @@ using Anitec.Platform.Subscriptions.Domain.Model.Queries;
 using Anitec.Platform.Subscriptions.Interfaces.Rest.Resources;
 using Anitec.Platform.Subscriptions.Interfaces.Rest.Transform;
 using Anitec.Platform.Iam.Infrastructure.Pipeline.Middleware.Attributes;
+using Anitec.Platform.Shared.Interfaces.Rest;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace Anitec.Platform.Subscriptions.Interfaces.Rest;
 
+/// <summary>
+/// Subscription plans. Everyone can read them; there is no administrator role, so creating, editing and
+/// deleting plans only works outside production.
+/// </summary>
 [Authorize("Rancher", "Veterinarian")]
 [ApiController]
 [Route("api/v1/subscription-plans")]
@@ -38,6 +43,7 @@ public class SubscriptionPlansController(
     [HttpPost]
     public async Task<IActionResult> Create(CreateSubscriptionPlanResource resource, CancellationToken cancellationToken)
     {
+        if (this.IsProduction()) return NotFound();
         var command = CreateSubscriptionPlanCommandFromResourceAssembler.ToCommandFromResource(resource);
         var result = await commandService.Handle(command, cancellationToken);
         return CreatedAtAction(nameof(GetById), new { id = result.Value!.Id },
@@ -47,6 +53,7 @@ public class SubscriptionPlansController(
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, CreateSubscriptionPlanResource resource, CancellationToken cancellationToken)
     {
+        if (this.IsProduction()) return NotFound();
         var command = UpdateSubscriptionPlanCommandFromResourceAssembler.ToCommandFromResource(id, resource);
         var result = await commandService.Handle(command, cancellationToken);
         if (result.IsFailure) return NotFound();
@@ -56,6 +63,7 @@ public class SubscriptionPlansController(
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
+        if (this.IsProduction()) return NotFound();
         var result = await commandService.Handle(new DeleteSubscriptionPlanCommand(id), cancellationToken);
         if (result.IsFailure) return NotFound();
         return NoContent();

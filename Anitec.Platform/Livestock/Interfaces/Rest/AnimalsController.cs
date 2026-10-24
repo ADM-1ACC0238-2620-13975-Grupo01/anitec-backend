@@ -3,9 +3,12 @@ using Anitec.Platform.Iam.Infrastructure.Pipeline.Middleware.Attributes;
 using Anitec.Platform.Livestock.Application.CommandServices;
 using Anitec.Platform.Livestock.Application.QueryServices;
 using Anitec.Platform.Livestock.Domain.Model.Commands;
+using Anitec.Platform.Livestock.Domain.Model.Entities;
 using Anitec.Platform.Livestock.Domain.Model.Queries;
 using Anitec.Platform.Livestock.Interfaces.Rest.Resources;
 using Anitec.Platform.Livestock.Interfaces.Rest.Transform;
+using Anitec.Platform.Shared.Application.Internal.Authorization;
+using Anitec.Platform.Shared.Interfaces.Rest;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 
@@ -14,6 +17,7 @@ namespace Anitec.Platform.Livestock.Interfaces.Rest;
 /// <summary>
 /// REST API for livestock animals (CRUD, bulk ops, and image upload).
 /// Accessible by Rancher and Veterinarian roles; write operations require Rancher.
+/// Only the animals of herds the user can see are returned or changed; anything else answers 403.
 /// </summary>
 [Authorize("Rancher", "Veterinarian")]
 [ApiController]
@@ -23,17 +27,26 @@ namespace Anitec.Platform.Livestock.Interfaces.Rest;
 public class AnimalsController(
     IAnimalCommandService commandService,
     IAnimalQueryService queryService,
-    IWebHostEnvironment webHostEnvironment) : ControllerBase
+    IWebHostEnvironment webHostEnvironment,
+    IAccessScopeService accessScopeService) : ControllerBase
 {
     /// <summary>MIME types accepted when uploading an animal image.</summary>
     private static readonly string[] AllowedImageContentTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
-    /// <summary>Returns every animal registered in the system.</summary>
+    /// <summary>
+    /// Returns the animals the signed-in user can see. Archived animals are included unless
+    /// <paramref name="archived" /> is false; with true only the archived ones are returned.
+    /// </summary>
+    /// <param name="archived">Optional filter on the archived status.</param>
+    /// <param name="cancellationToken">Request cancellation token.</param>
     [HttpGet]
-    public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
+    public async Task<IActionResult> GetAll([FromQuery] bool? archived, CancellationToken cancellationToken)
     {
+        var scope = await this.ScopeAsync(accessScopeService, cancellationToken);
         var result = await queryService.Handle(new GetAllAnimalsQuery(), cancellationToken);
-        return Ok(result.Select(AnimalResourceFromEntityAssembler.ToResourceFromEntity));
+        return Ok(result.Where(animal => scope.CanSeeAnimalId(animal.Id))
+            .Where(animal => archived is not { } wanted || IsArchived(animal) == wanted)
+            .Select(AnimalResourceFromEntityAssembler.ToResourceFromEntity));
     }
 
     /// <summary>Returns a single animal by its identifier.</summary>
@@ -44,6 +57,8 @@ public class AnimalsController(
     {
         var result = await queryService.Handle(new GetAnimalByIdQuery(id), cancellationToken);
         if (result is null) return NotFound();
+        var scope = await this.ScopeAsync(accessScopeService, cancellationToken);
+        if (!scope.CanSeeAnimalId(result.Id)) return this.Forbidden();
         return Ok(AnimalResourceFromEntityAssembler.ToResourceFromEntity(result));
     }
 
@@ -56,6 +71,8 @@ public class AnimalsController(
     {
         var errors = ValidateAnimalResource(resource);
         if (errors.Count > 0) return BadRequest(new { message = "One or more fields are invalid.", errors });
+        var scope = await this.ScopeAsync(accessScopeService, cancellationToken);
+        if (!scope.CanSeeHerdId(resource.HerdId)) return this.Forbidden();
 
         var command = CreateAnimalCommandFromResourceAssembler.ToCommandFromResource(resource);
         var result = await commandService.Handle(command, cancellationToken);
@@ -74,11 +91,20 @@ public class AnimalsController(
         var errors = ValidateAnimalResource(resource);
         if (errors.Count > 0) return BadRequest(new { message = "One or more fields are invalid.", errors });
 
+        var existing = await queryService.Handle(new GetAnimalByIdQuery(id), cancellationToken);
+        if (existing is null) return NotFound();
+        var scope = await this.ScopeAsync(accessScopeService, cancellationToken);
+        if (!scope.CanSeeAnimalId(existing.Id) || !scope.CanSeeHerdId(resource.HerdId)) return this.Forbidden();
+
         var command = UpdateAnimalCommandFromResourceAssembler.ToCommandFromResource(id, resource);
         var result = await commandService.Handle(command, cancellationToken);
         if (result.IsFailure) return NotFound();
         return Ok(AnimalResourceFromEntityAssembler.ToResourceFromEntity(result.Value!));
     }
+
+    /// <summary>True when the animal's status is the archived one.</summary>
+    private static bool IsArchived(Animal animal) =>
+        string.Equals(animal.Status, Animal.ArchivedStatus, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// Validates required fields and basic constraints on a create/update animal payload.
@@ -105,6 +131,11 @@ public class AnimalsController(
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
+        var existing = await queryService.Handle(new GetAnimalByIdQuery(id), cancellationToken);
+        if (existing is null) return NotFound();
+        var scope = await this.ScopeAsync(accessScopeService, cancellationToken);
+        if (!scope.CanSeeAnimalId(existing.Id)) return this.Forbidden();
+
         var result = await commandService.Handle(new DeleteAnimalCommand(id), cancellationToken);
         if (result.IsFailure) return NotFound();
         return NoContent();
@@ -127,11 +158,33 @@ public class AnimalsController(
         if (resource.Quantity is < 1 or > 500) errors.Add("Quantity must be between 1 and 500.");
         if (resource.Weight < 0) errors.Add("Weight cannot be negative.");
         if (errors.Count > 0) return BadRequest(new { message = "One or more fields are invalid.", errors });
+        var scope = await this.ScopeAsync(accessScopeService, cancellationToken);
+        if (!scope.CanSeeHerdId(resource.HerdId)) return this.Forbidden();
 
         var command = CreateAnimalBatchCommandFromResourceAssembler.ToCommandFromResource(resource);
         var result = await commandService.Handle(command, cancellationToken);
         if (result.IsFailure) return BadRequest(new { message = result.Message });
         return Created(string.Empty, result.Value!.Select(AnimalResourceFromEntityAssembler.ToResourceFromEntity));
+    }
+
+    /// <summary>
+    /// Changes the status of one animal. Sending "Archivado" archives it and any other status restores it.
+    /// Rancher role only.
+    /// </summary>
+    [Authorize("Rancher")]
+    [HttpPatch("{id:int}/status")]
+    public async Task<IActionResult> UpdateStatus(int id, UpdateAnimalStatusResource resource, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(resource.Status)) return BadRequest(new { message = "Status is required." });
+
+        var existing = await queryService.Handle(new GetAnimalByIdQuery(id), cancellationToken);
+        if (existing is null) return NotFound();
+        var scope = await this.ScopeAsync(accessScopeService, cancellationToken);
+        if (!scope.CanSeeAnimalId(existing.Id)) return this.Forbidden();
+
+        var result = await commandService.Handle(new UpdateAnimalsStatusCommand([id], resource.Status), cancellationToken);
+        if (result.IsFailure) return BadRequest(new { message = result.Message });
+        return Ok(AnimalResourceFromEntityAssembler.ToResourceFromEntity(result.Value!.Single()));
     }
 
     /// <summary>Updates the status of many animals at once. Rancher role only.</summary>
@@ -142,6 +195,8 @@ public class AnimalsController(
         if (resource.AnimalIds is null || resource.AnimalIds.Count == 0)
             return BadRequest(new { message = "At least one animal must be selected." });
         if (string.IsNullOrWhiteSpace(resource.Status)) return BadRequest(new { message = "Status is required." });
+        var scope = await this.ScopeAsync(accessScopeService, cancellationToken);
+        if (resource.AnimalIds.Any(animalId => !scope.CanSeeAnimalId(animalId))) return this.Forbidden();
 
         var command = new UpdateAnimalsStatusCommand(resource.AnimalIds, resource.Status);
         var result = await commandService.Handle(command, cancellationToken);
@@ -156,6 +211,8 @@ public class AnimalsController(
     {
         if (resource.AnimalIds is null || resource.AnimalIds.Count == 0)
             return BadRequest(new { message = "At least one animal must be selected." });
+        var scope = await this.ScopeAsync(accessScopeService, cancellationToken);
+        if (resource.AnimalIds.Any(animalId => !scope.CanSeeAnimalId(animalId))) return this.Forbidden();
 
         var result = await commandService.Handle(new DeleteAnimalsCommand(resource.AnimalIds), cancellationToken);
         if (result.IsFailure) return BadRequest(new { message = result.Message });

@@ -15,6 +15,28 @@ namespace Anitec.Platform.Shared.Infrastructure.Persistence.EntityFrameworkCore.
 
 public static class AppDbContextSeeder
 {
+    /// <summary>
+    ///     Adds the subscription plans when the table is empty. The plans are catalog data that every
+    ///     environment needs, so unlike the demo users this also runs in production and never overwrites
+    ///     existing plans.
+    /// </summary>
+    public static async Task SeedSubscriptionPlansAsync(AppDbContext context, CancellationToken cancellationToken = default)
+    {
+        if (await context.Set<SubscriptionPlan>().AnyAsync(cancellationToken))
+            return;
+
+        await context.Set<SubscriptionPlan>().AddRangeAsync(DefaultPlans(), cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <summary>The plans offered to ranchers and veterinarians. The checkout builds the Stripe price from these values.</summary>
+    private static List<SubscriptionPlan> DefaultPlans() =>
+    [
+        new() { Name = "Ganadero Basico", Price = 49, StripePriceId = "mock_price_rancher_basic", MaxAnimals = 80, IsActive = true },
+        new() { Name = "Ganadero Pro", Price = 99, StripePriceId = "mock_price_rancher_pro", MaxAnimals = 250, IsActive = true },
+        new() { Name = "Veterinario Profesional", Price = 129, StripePriceId = "mock_price_vet_pro", MaxAnimals = 1000, IsActive = true }
+    ];
+
     public static async Task SeedDevelopmentDataAsync(
         AppDbContext context,
         IHashingService hashingService,
@@ -149,12 +171,7 @@ public static class AppDbContextSeeder
             Metric(devices[4].Id, "AirTemperature", 18.7m, "C", -1)
         }, cancellationToken);
 
-        var plans = new List<SubscriptionPlan>
-        {
-            new() { Name = "Ganadero Basico", Price = 49, StripePriceId = "mock_price_rancher_basic", MaxAnimals = 80, IsActive = true },
-            new() { Name = "Ganadero Pro", Price = 99, StripePriceId = "mock_price_rancher_pro", MaxAnimals = 250, IsActive = true },
-            new() { Name = "Veterinario Profesional", Price = 129, StripePriceId = "mock_price_vet_pro", MaxAnimals = 1000, IsActive = true }
-        };
+        var plans = DefaultPlans();
 
         await context.Set<SubscriptionPlan>().AddRangeAsync(plans, cancellationToken);
         await context.SaveChangesAsync(cancellationToken);

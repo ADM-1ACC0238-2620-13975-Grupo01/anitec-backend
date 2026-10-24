@@ -14,6 +14,8 @@ using Anitec.Platform.Livestock.Domain.Model.Entities;
 using Anitec.Platform.Livestock.Domain.Model.Queries;
 using Anitec.Platform.Sanitary.Application.QueryServices;
 using Anitec.Platform.Sanitary.Domain.Model.Queries;
+using Anitec.Platform.Shared.Application.Internal.Authorization;
+using Anitec.Platform.Shared.Interfaces.Rest;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 
@@ -31,11 +33,15 @@ public class DashboardAnalyticsController(
     IFinancialRecordQueryService financialRecordQueryService,
     IFarmActivityQueryService farmActivityQueryService,
     IDeviceQueryService deviceQueryService,
-    IVeterinarianClientQueryService veterinarianClientQueryService) : ControllerBase
+    IVeterinarianClientQueryService veterinarianClientQueryService,
+    IAccessScopeService accessScopeService) : ControllerBase
 {
     [HttpGet("ranchers/{rancherId:int}/dashboard")]
     public async Task<IActionResult> GetRancherDashboard(int rancherId, CancellationToken cancellationToken)
     {
+        // The dashboard includes income and expenses, so only the rancher themself can read it.
+        if (!IsSelfRancher(rancherId)) return this.Forbidden();
+
         var herds = (await herdQueryService.Handle(new GetAllHerdsQuery(), cancellationToken))
             .Where(herd => herd.OwnerId == rancherId)
             .ToList();
@@ -81,6 +87,8 @@ public class DashboardAnalyticsController(
     [HttpGet("veterinarians/{veterinarianId:int}/dashboard")]
     public async Task<IActionResult> GetVeterinarianDashboard(int veterinarianId, CancellationToken cancellationToken)
     {
+        if (veterinarianId != this.CurrentUser().Id) return this.Forbidden();
+
         var clients = (await veterinarianClientQueryService.Handle(
             new GetVeterinarianClientsByVeterinarianIdQuery(veterinarianId),
             cancellationToken)).ToList();
@@ -109,6 +117,9 @@ public class DashboardAnalyticsController(
     [HttpGet("ranchers/{rancherId:int}/health-summary")]
     public async Task<IActionResult> GetRancherHealthSummary(int rancherId, CancellationToken cancellationToken)
     {
+        var scope = await this.ScopeAsync(accessScopeService, cancellationToken);
+        if (!scope.CanSeeRancher(rancherId)) return this.Forbidden();
+
         var herds = (await herdQueryService.Handle(new GetAllHerdsQuery(), cancellationToken))
             .Where(herd => herd.OwnerId == rancherId)
             .ToList();
@@ -128,6 +139,8 @@ public class DashboardAnalyticsController(
     [HttpGet("ranchers/{rancherId:int}/financial-summary")]
     public async Task<IActionResult> GetRancherFinancialSummary(int rancherId, CancellationToken cancellationToken)
     {
+        if (!IsSelfRancher(rancherId)) return this.Forbidden();
+
         var records = (await financialRecordQueryService.Handle(new GetAllFinancialRecordsQuery(), cancellationToken))
             .Where(record => record.OwnerId == rancherId)
             .ToList();
@@ -147,6 +160,13 @@ public class DashboardAnalyticsController(
             records
                 .GroupBy(record => record.Category)
                 .Select(group => new MetricSliceResource(group.Key, group.Sum(record => record.Amount)))));
+    }
+
+    /// <summary>True when the signed-in user is a rancher and <paramref name="rancherId" /> is their own id.</summary>
+    private bool IsSelfRancher(int rancherId)
+    {
+        var user = this.CurrentUser();
+        return user.Id == rancherId && !"Veterinarian".Equals(user.Role, StringComparison.OrdinalIgnoreCase);
     }
 
     private async Task<List<Animal>> GetAnimalsForHerds(IEnumerable<Herd> herds, CancellationToken cancellationToken)

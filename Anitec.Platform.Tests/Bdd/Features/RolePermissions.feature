@@ -8,11 +8,29 @@ Feature: Role permissions
     And the farm has a corral called "Corral A"
     And the corral "Corral A" has the animal "COW-001"
 
-  Scenario: A veterinarian can see the animals
+  Scenario: A veterinarian can see the animals of their clients
     Given I am signed in as a "Veterinarian"
+    And I am a client of the rancher
     When I request the list of animals
     Then the request succeeds
     And the animal "COW-001" appears in the animal list
+
+  Scenario: A veterinarian does not see the animals of ranchers who are not their clients
+    Given I am signed in as a "Veterinarian"
+    When I request the list of animals
+    Then the request succeeds
+    And the animal "COW-001" no longer appears in the animal list
+
+  Scenario: A rancher does not see the animals of another rancher
+    Given I am signed in as another "Rancher"
+    When I request the list of animals
+    Then the request succeeds
+    And the animal "COW-001" no longer appears in the animal list
+
+  Scenario: A rancher cannot delete the animals of another rancher
+    Given I am signed in as another "Rancher"
+    When I delete the animal "COW-001"
+    Then the request is rejected with status 403
 
   Scenario: A veterinarian cannot register animals
     Given I am signed in as a "Veterinarian"
