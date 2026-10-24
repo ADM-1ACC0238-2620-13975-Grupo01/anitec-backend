@@ -39,3 +39,6 @@ msbuild.err
 
 ## Código generado por Reqnroll a partir de los archivos .feature
 *.feature.cs
+
+# Photos uploaded while testing locally
+Anitec.Platform/wwwroot/uploads/

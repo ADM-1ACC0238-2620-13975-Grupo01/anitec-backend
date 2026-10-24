@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Anitec.Platform.Livestock.Application.CommandServices;
 using Anitec.Platform.Livestock.Domain.Model.Commands;
 using Anitec.Platform.Livestock.Domain.Model;
@@ -65,12 +66,29 @@ public class AnimalCommandService(IAnimalRepository repository, ICorralRepositor
         var slug = new string(corral.Name.Where(char.IsLetterOrDigit).ToArray());
         if (string.IsNullOrWhiteSpace(slug)) slug = "CORRAL";
 
+        // With a base name each animal is called "<name>-001", "<name>-002"..., continuing after the highest
+        // number already used with that name in the same herd. Without it the name is the generated code.
+        var baseName = command.Name?.Trim();
+        var lastNameNumber = 0L;
+        if (!string.IsNullOrEmpty(baseName))
+        {
+            var pattern = new Regex($@"^{Regex.Escape(baseName)}-(\d+)$", RegexOptions.IgnoreCase);
+            lastNameNumber = allAnimals
+                .Where(a => a.HerdId == command.HerdId)
+                .Select(a => pattern.Match(a.Name))
+                .Where(match => match.Success && long.TryParse(match.Groups[1].Value, out _))
+                .Select(match => long.Parse(match.Groups[1].Value))
+                .DefaultIfEmpty(0)
+                .Max();
+        }
+
         var created = new List<Animal>();
         for (var i = 1; i <= command.Quantity; i++)
         {
             var sequence = existingInCorral + i;
             var tag = $"{slug}-{sequence:000}";
-            var createCommand = new CreateAnimalCommand(tag, tag, command.Species, command.Breed, command.Gender,
+            var name = string.IsNullOrEmpty(baseName) ? tag : $"{baseName}-{lastNameNumber + i:000}";
+            var createCommand = new CreateAnimalCommand(tag, name, command.Species, command.Breed, command.Gender,
                 command.BirthDate, command.Weight, command.Status, command.HerdId, command.CorralId,
                 command.Source, command.AgeRange, command.ImageUrl);
             var entity = new Animal(createCommand);

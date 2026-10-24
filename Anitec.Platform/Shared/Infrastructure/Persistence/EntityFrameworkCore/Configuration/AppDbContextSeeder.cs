@@ -37,6 +37,20 @@ public static class AppDbContextSeeder
         new() { Name = "Veterinario Profesional", Price = 129, StripePriceId = "mock_price_vet_pro", MaxAnimals = 1000, IsActive = true }
     ];
 
+    /// <summary>
+    ///     One group of similar animals inside a corral. [NameBase] names them "NameBase-001", "NameBase-002"...;
+    ///     without it they take a name from [Names]. The last [Archived] animals of the group start archived.
+    /// </summary>
+    private sealed record Lot(
+        string Herd, string Corral, string Prefix, string Species, string[] Breeds, string[] Names,
+        decimal Weight, int Count, string? NameBase = null, int Archived = 0);
+
+    /// <summary>
+    ///     Demo data for development: seven users, eleven farms with their corrals and about 180 animals, three
+    ///     ranchers with a lot of data (ganadero, maria, jose), a smaller fourth one (rosa) and the veterinarians
+    ///     that attend them. Dates are relative to today so there are always upcoming activities and follow-ups.
+    ///     It only runs on an empty database.
+    /// </summary>
     public static async Task SeedDevelopmentDataAsync(
         AppDbContext context,
         IHashingService hashingService,
@@ -69,92 +83,262 @@ public static class AppDbContextSeeder
         var rosa = users[5];
         var vetLucia = users[6];
 
+        // ---------- Farms ----------
         var herds = new List<Herd>
         {
-            new() { Name = "Hato Los Alamos", Location = "Cajamarca", Owner = ganadero.FullName, OwnerId = ganadero.Id, VeterinarianId = veterinaria.Id, MainType = "Mixto" },
-            new() { Name = "Granja El Molino", Location = "Cajamarca", Owner = ganadero.FullName, OwnerId = ganadero.Id, VeterinarianId = veterinaria.Id, MainType = "Aves" },
-            new() { Name = "Finca Santa Rosa", Location = "Junin", Owner = maria.FullName, OwnerId = maria.Id, VeterinarianId = veterinaria.Id, MainType = "Ovino y caprino" },
-            new() { Name = "Establo La Esperanza", Location = "Junin", Owner = maria.FullName, OwnerId = maria.Id, VeterinarianId = veterinaria.Id, MainType = "Bovino" },
-            new() { Name = "Fundo Alto Verde", Location = "Cusco", Owner = jose.FullName, OwnerId = jose.Id, VeterinarianId = vetPedro.Id, MainType = "Mixto" },
-            new() { Name = "Corral San Miguel", Location = "Cusco", Owner = jose.FullName, OwnerId = jose.Id, VeterinarianId = vetPedro.Id, MainType = "Porcino" },
-            new() { Name = "Finca Las Lomas", Location = "Ayacucho", Owner = rosa.FullName, OwnerId = rosa.Id, VeterinarianId = vetLucia.Id, MainType = "Mixto" },
-            new() { Name = "Avicola Sol Andino", Location = "Ayacucho", Owner = rosa.FullName, OwnerId = rosa.Id, VeterinarianId = vetLucia.Id, MainType = "Aves" }
+            Farm("Hato Los Alamos", "Cajamarca", ganadero, veterinaria, "Mixto"),
+            Farm("Granja El Molino", "Cajamarca", ganadero, veterinaria, "Aves"),
+            Farm("Establo Pampa Verde", "Cajamarca", ganadero, veterinaria, "Bovino"),
+            Farm("Finca Santa Rosa", "Junin", maria, veterinaria, "Ovino y caprino"),
+            Farm("Establo La Esperanza", "Junin", maria, veterinaria, "Bovino"),
+            Farm("Granja Los Pinos", "Junin", maria, veterinaria, "Mixto"),
+            Farm("Fundo Alto Verde", "Cusco", jose, vetPedro, "Mixto"),
+            Farm("Corral San Miguel", "Cusco", jose, vetPedro, "Porcino"),
+            Farm("Finca Valle Sagrado", "Cusco", jose, vetPedro, "Bovino y equino"),
+            Farm("Finca Las Lomas", "Ayacucho", rosa, vetLucia, "Mixto"),
+            Farm("Avicola Sol Andino", "Ayacucho", rosa, vetLucia, "Aves")
         };
 
         await context.Set<Herd>().AddRangeAsync(herds, cancellationToken);
         await context.SaveChangesAsync(cancellationToken);
+        var herdByName = herds.ToDictionary(herd => herd.Name);
 
-        var animals = new List<Animal>
+        // ---------- Corrals ----------
+        var corralNames = new (string Herd, string[] Corrals)[]
         {
-            Animal("BOV-001", "Luna", "Bovino", "Brown Swiss", "Hembra", "2021-03-14", 410, "Saludable", herds[0].Id),
-            Animal("BOV-002", "Tornado", "Bovino", "Holstein", "Macho", "2020-10-03", 620, "En tratamiento", herds[0].Id),
-            Animal("OVI-001", "Nube", "Ovino", "Corriedale", "Hembra", "2022-07-21", 55, "Saludable", herds[2].Id),
-            Animal("CAP-001", "Chaska", "Caprino", "Saanen", "Hembra", "2023-01-18", 42, "Observacion", herds[2].Id),
-            Animal("BOV-003", "Estrella", "Bovino", "Jersey", "Hembra", "2021-11-10", 360, "Saludable", herds[3].Id),
-            Animal("CER-001", "Moro", "Porcino", "Duroc", "Macho", "2023-04-02", 115, "Saludable", herds[5].Id),
-            Animal("CER-002", "Pecas", "Porcino", "Yorkshire", "Hembra", "2022-12-19", 128, "Observacion", herds[5].Id),
-            Animal("AVE-001", "Gallina Roja", "Pollo", "Rhode Island", "Hembra", "2024-01-05", 3, "Saludable", herds[1].Id),
-            Animal("AVE-002", "Pato Norte", "Pato", "Pekin", "Macho", "2023-09-12", 4, "Saludable", herds[1].Id),
-            Animal("AVE-003", "Pollon", "Pollo", "Cobb 500", "Macho", "2024-02-11", 3, "En tratamiento", herds[7].Id),
-            Animal("BOV-004", "Maya", "Bovino", "Simmental", "Hembra", "2022-05-07", 390, "Saludable", herds[4].Id),
-            Animal("EQU-001", "Relampago", "Equino", "Criollo", "Macho", "2019-08-25", 430, "Saludable", herds[4].Id),
-            Animal("OVI-002", "Copito", "Ovino", "Junin", "Macho", "2023-06-01", 48, "Saludable", herds[6].Id),
-            Animal("CAP-002", "Sierra", "Caprino", "Alpina", "Hembra", "2022-03-30", 46, "Observacion", herds[6].Id),
-            Animal("BOV-005", "Canela", "Bovino", "Brown Swiss", "Hembra", "2020-01-20", 455, "Saludable", herds[0].Id),
-            Animal("AVE-004", "Pato Laguna", "Pato", "Muscovy", "Hembra", "2023-11-03", 4, "Saludable", herds[7].Id)
+            ("Hato Los Alamos", ["Corral Norte", "Corral Sur", "Establo Lechero", "Potrero Alto"]),
+            ("Granja El Molino", ["Galpon 1", "Galpon 2", "Galpon 3"]),
+            ("Establo Pampa Verde", ["Establo A", "Establo B", "Corral de Engorde"]),
+            ("Finca Santa Rosa", ["Majada Ovina", "Corral Caprino", "Corral de Cria"]),
+            ("Establo La Esperanza", ["Establo Principal", "Corral de Terneros", "Corral de Vacas Secas"]),
+            ("Granja Los Pinos", ["Chiquero 1", "Chiquero 2", "Galpon de Pollos"]),
+            ("Fundo Alto Verde", ["Corral Principal", "Cuadra de Caballos", "Corral de Cria", "Potrero Bajo"]),
+            ("Corral San Miguel", ["Chiquero A", "Chiquero B", "Chiquero C"]),
+            ("Finca Valle Sagrado", ["Corral Andino", "Cuadra Sagrada", "Potrero Rio"]),
+            ("Finca Las Lomas", ["Corral Lomas 1", "Corral Lomas 2", "Majada Lomas"]),
+            ("Avicola Sol Andino", ["Galpon Sol 1", "Galpon Sol 2"])
         };
+
+        var corrals = corralNames
+            .SelectMany(group => group.Corrals.Select(name => new Corral { Name = name, HerdId = herdByName[group.Herd].Id }))
+            .ToList();
+        await context.Set<Corral>().AddRangeAsync(corrals, cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
+        var corralId = corrals.ToDictionary(corral => (corral.HerdId, corral.Name), corral => corral.Id);
+
+        // ---------- Animals ----------
+        string[] cattle = ["Luna", "Tornado", "Estrella", "Canela", "Maya", "Bruna", "Rosita", "Lucero", "Princesa", "Capitan", "Nevada", "Paloma", "Cholita", "Trueno", "Margarita", "Lola"];
+        string[] sheep = ["Nube", "Copito", "Algodon", "Lanita", "Blanquita", "Rizos", "Vellon", "Pelusa"];
+        string[] goats = ["Chaska", "Sierra", "Cabri", "Manchita", "Brisa", "Pico", "Savia", "Mota"];
+        string[] pigs = ["Moro", "Pecas", "Rosado", "Gordo", "Chancho", "Panchita", "Tocino", "Morrocoy"];
+        string[] horses = ["Relampago", "Centella", "Alazan", "Bravo", "Lucero Alado", "Tormenta"];
+        string[] cattleBreeds = ["Brown Swiss", "Holstein", "Jersey", "Simmental", "Criollo"];
+        string[] sheepBreeds = ["Corriedale", "Junin", "Hampshire"];
+        string[] goatBreeds = ["Saanen", "Alpina", "Criolla"];
+        string[] pigBreeds = ["Duroc", "Yorkshire", "Landrace"];
+        string[] horseBreeds = ["Criollo", "Peruano de Paso"];
+        string[] chickenBreeds = ["Rhode Island", "Cobb 500", "Ross 308"];
+        string[] duckBreeds = ["Pekin", "Muscovy"];
+
+        var lots = new List<Lot>
+        {
+            // Carlos Mendoza (ganadero)
+            new("Hato Los Alamos", "Corral Norte", "BOV", "Bovino", cattleBreeds, cattle, 410, 6),
+            new("Hato Los Alamos", "Corral Sur", "BOV", "Bovino", cattleBreeds, Enumerable.Reverse(cattle).ToArray(), 450, 5, Archived: 1),
+            new("Hato Los Alamos", "Establo Lechero", "BOV", "Bovino", ["Brown Swiss", "Holstein"], cattle.Skip(5).ToArray(), 520, 5),
+            new("Hato Los Alamos", "Potrero Alto", "EQU", "Equino", horseBreeds, horses, 430, 3),
+            new("Granja El Molino", "Galpon 1", "AVE", "Pollo", chickenBreeds, ["Pollo"], 3, 10, NameBase: "polloComercio"),
+            new("Granja El Molino", "Galpon 2", "AVE", "Pollo", chickenBreeds, ["Pollo"], 3, 8, NameBase: "polloPostura"),
+            new("Granja El Molino", "Galpon 3", "AVE", "Pato", duckBreeds, ["Pato"], 4, 5, NameBase: "pato", Archived: 1),
+            new("Establo Pampa Verde", "Establo A", "BOV", "Bovino", cattleBreeds, cattle.Skip(2).ToArray(), 395, 6),
+            new("Establo Pampa Verde", "Establo B", "BOV", "Bovino", cattleBreeds, cattle.Skip(7).ToArray(), 380, 6),
+            new("Establo Pampa Verde", "Corral de Engorde", "BOV", "Bovino", ["Simmental", "Criollo"], cattle.Skip(9).ToArray(), 560, 5),
+
+            // Maria Gonzales (maria)
+            new("Finca Santa Rosa", "Majada Ovina", "OVI", "Ovino", sheepBreeds, sheep, 55, 8),
+            new("Finca Santa Rosa", "Corral Caprino", "CAP", "Caprino", goatBreeds, goats, 44, 6),
+            new("Finca Santa Rosa", "Corral de Cria", "OVI", "Ovino", sheepBreeds, sheep.Skip(3).ToArray(), 22, 4),
+            new("Establo La Esperanza", "Establo Principal", "BOV", "Bovino", ["Jersey", "Holstein"], cattle.Skip(3).ToArray(), 365, 7),
+            new("Establo La Esperanza", "Corral de Terneros", "BOV", "Bovino", ["Jersey", "Holstein"], cattle.Skip(10).ToArray(), 120, 5),
+            new("Establo La Esperanza", "Corral de Vacas Secas", "BOV", "Bovino", ["Jersey"], cattle.Skip(1).ToArray(), 400, 4),
+            new("Granja Los Pinos", "Chiquero 1", "CER", "Porcino", pigBreeds, pigs, 110, 5),
+            new("Granja Los Pinos", "Chiquero 2", "CER", "Porcino", pigBreeds, pigs.Skip(2).ToArray(), 95, 5),
+            new("Granja Los Pinos", "Galpon de Pollos", "AVE", "Pollo", chickenBreeds, ["Pollo"], 3, 8, NameBase: "polloEngorde"),
+
+            // Jose Quispe (jose)
+            new("Fundo Alto Verde", "Corral Principal", "BOV", "Bovino", cattleBreeds, cattle.Skip(4).ToArray(), 390, 6),
+            new("Fundo Alto Verde", "Cuadra de Caballos", "EQU", "Equino", horseBreeds, horses.Skip(1).ToArray(), 440, 4),
+            new("Fundo Alto Verde", "Corral de Cria", "OVI", "Ovino", sheepBreeds, sheep.Skip(1).ToArray(), 30, 3),
+            new("Corral San Miguel", "Chiquero A", "CER", "Porcino", pigBreeds, pigs, 115, 6),
+            new("Corral San Miguel", "Chiquero B", "CER", "Porcino", pigBreeds, pigs.Skip(1).ToArray(), 125, 6),
+            new("Corral San Miguel", "Chiquero C", "CER", "Porcino", pigBreeds, pigs.Skip(3).ToArray(), 90, 5),
+            new("Finca Valle Sagrado", "Corral Andino", "BOV", "Bovino", ["Criollo", "Brown Swiss"], cattle.Skip(6).ToArray(), 370, 6),
+            new("Finca Valle Sagrado", "Cuadra Sagrada", "EQU", "Equino", horseBreeds, horses, 420, 3),
+            new("Finca Valle Sagrado", "Potrero Rio", "CAP", "Caprino", goatBreeds, goats.Skip(2).ToArray(), 40, 5),
+
+            // Rosa Huaman (rosa): a smaller farm
+            new("Finca Las Lomas", "Corral Lomas 1", "BOV", "Bovino", cattleBreeds, cattle.Skip(8).ToArray(), 385, 5),
+            new("Finca Las Lomas", "Corral Lomas 2", "OVI", "Ovino", sheepBreeds, sheep, 48, 4),
+            new("Finca Las Lomas", "Majada Lomas", "CAP", "Caprino", goatBreeds, goats.Skip(4).ToArray(), 43, 4),
+            new("Avicola Sol Andino", "Galpon Sol 1", "AVE", "Pollo", chickenBreeds, ["Pollo"], 3, 8, NameBase: "polloSol"),
+            new("Avicola Sol Andino", "Galpon Sol 2", "AVE", "Pato", duckBreeds, ["Pato"], 4, 6, NameBase: "patoLaguna")
+        };
+
+        var animals = new List<Animal>();
+        var animalLot = new Dictionary<Animal, Lot>();
+        var numberByPrefix = new Dictionary<string, int>();
+        var timesNameUsed = new Dictionary<(int OwnerId, string Name), int>();
+        var counter = 0;
+        foreach (var lot in lots)
+        {
+            var herd = herdByName[lot.Herd];
+            for (var i = 0; i < lot.Count; i++)
+            {
+                counter++;
+                var number = numberByPrefix[lot.Prefix] = numberByPrefix.GetValueOrDefault(lot.Prefix) + 1;
+                var name = lot.NameBase is not null
+                    ? $"{lot.NameBase}-{i + 1:000}"
+                    : i < lot.Names.Length ? lot.Names[i] : $"{lot.Names[i % lot.Names.Length]} {i / lot.Names.Length + 1}";
+                // A rancher never has two animals with the same name: a repeated one gets a number ("Bruna 2").
+                var used = timesNameUsed[(herd.OwnerId, name)] = timesNameUsed.GetValueOrDefault((herd.OwnerId, name)) + 1;
+                if (used > 1) name = $"{name} {used}";
+                var isBird = lot.Species is "Pollo" or "Pato";
+                var status = i >= lot.Count - lot.Archived ? "Archivado"
+                    : counter % 29 == 11 ? "Vendido"
+                    : counter % 19 == 7 ? "En tratamiento"
+                    : counter % 13 == 4 ? "Observacion"
+                    : "Saludable";
+                var animal = Animal(
+                    $"{lot.Prefix}-{number:000}", name, lot.Species, lot.Breeds[i % lot.Breeds.Length],
+                    isBird ? (i % 3 == 0 ? "Macho" : "Hembra") : (i % 2 == 0 ? "Hembra" : "Macho"),
+                    Day(-(300 + i * 53 % 1500)), lot.Weight + lot.Weight * (i % 6) * 0.04m, status,
+                    herd.Id, corralId[(herd.Id, lot.Corral)]);
+                animals.Add(animal);
+                animalLot[animal] = lot;
+            }
+        }
 
         await context.Set<Animal>().AddRangeAsync(animals, cancellationToken);
         await context.SaveChangesAsync(cancellationToken);
 
+        // ---------- Veterinarian clients ----------
         await context.Set<VeterinarianClient>().AddRangeAsync(new[]
         {
             Client(veterinaria.Id, ganadero.Id),
             Client(veterinaria.Id, maria.Id),
+            Client(veterinaria.Id, jose.Id),
             Client(vetPedro.Id, jose.Id),
             Client(vetLucia.Id, rosa.Id)
         }, cancellationToken);
 
-        await context.Set<HealthEvent>().AddRangeAsync(new[]
+        // ---------- Health events ----------
+        var vetNameByHerd = herds.ToDictionary(herd => herd.Id, herd => users.First(user => user.Id == herd.VeterinarianId).FullName);
+        var healthEvents = new List<HealthEvent>();
+        foreach (var animal in animals.Where(animal => animal.Status is "Observacion" or "En tratamiento"))
         {
-            Health(animals[0].Id, "Vacuna", "2026-05-10", "Vacuna anual contra carbunco", veterinaria.FullName, "Control preventivo", "Aplicacion de vacuna", "Refuerzo anual", "Revisar proxima campana", "2026-11-10"),
-            Health(animals[1].Id, "Tratamiento", "2026-05-18", "Diarrea y perdida de apetito", veterinaria.FullName, "Infeccion digestiva leve", "Antibiotico y hidratacion", "Oxitetraciclina cada 24h", "Control en 7 dias", "2026-06-14"),
-            Health(animals[3].Id, "Incidencia", "2026-05-22", "Cojera leve en pata delantera", veterinaria.FullName, "Lesion por golpe", "Reposo y antiinflamatorio", "Meloxicam dosis unica", "Evaluar movilidad", "2026-06-11"),
-            Health(animals[6].Id, "Revision", "2026-05-28", "Control de peso y temperatura", vetPedro.FullName, "Sin fiebre", "Observacion nutricional", "Suplemento vitaminico", "Nuevo pesaje", "2026-06-20"),
-            Health(animals[9].Id, "Diagnostico", "2026-06-01", "Ave con baja actividad", vetLucia.FullName, "Sospecha respiratoria", "Aislamiento y tratamiento", "Antibiotico aviar", "Monitoreo diario", "2026-06-09"),
-            Health(animals[13].Id, "Tratamiento", "2026-06-03", "Parasitos externos", vetLucia.FullName, "Infestacion moderada", "Bano sanitario", "Ivermectina", "Repetir dosis", "2026-06-17")
-        }, cancellationToken);
+            var vet = vetNameByHerd[animal.HerdId];
+            healthEvents.Add(animal.Status == "En tratamiento"
+                ? Health(animal.Id, "Tratamiento", Day(-6 - animal.Id % 5), "Perdida de apetito y decaimiento", vet,
+                    "Infeccion leve", "Antibiotico e hidratacion", "Oxitetraciclina cada 24h", "Control en una semana", Day(3 + animal.Id % 7))
+                : Health(animal.Id, "Incidencia", Day(-9 - animal.Id % 6), "Cojera leve y comportamiento apatico", vet,
+                    "Lesion por golpe", "Reposo y antiinflamatorio", "Meloxicam dosis unica", "Evaluar movilidad", Day(5 + animal.Id % 9)));
+        }
 
-        await context.Set<FinancialRecord>().AddRangeAsync(new[]
+        foreach (var group in animals.GroupBy(animal => animalLot[animal]))
         {
-            Finance(ganadero.Id, "Ingreso", "Venta de leche", 4200, "2026-05-04", "Venta mensual a acopiador local"),
-            Finance(ganadero.Id, "Egreso", "Alimento", 1350, "2026-05-08", "Concentrado y forraje"),
-            Finance(ganadero.Id, "Ingreso", "Venta de aves", 980, "2026-05-17", "Venta de pollos y patos"),
-            Finance(maria.Id, "Ingreso", "Venta de lana", 1650, "2026-05-12", "Produccion de ovinos"),
-            Finance(maria.Id, "Egreso", "Medicamentos", 380, "2026-05-19", "Botiquin sanitario"),
-            Finance(jose.Id, "Ingreso", "Venta porcina", 3100, "2026-05-23", "Lote porcino"),
-            Finance(jose.Id, "Egreso", "Infraestructura", 920, "2026-05-26", "Mantenimiento de corrales"),
-            Finance(rosa.Id, "Ingreso", "Venta avicola", 2100, "2026-06-02", "Produccion de aves"),
-            Finance(rosa.Id, "Egreso", "Vacunas", 460, "2026-06-04", "Campana preventiva")
-        }, cancellationToken);
+            var animal = group.First(candidate => candidate.Status != "Archivado");
+            healthEvents.Add(Health(animal.Id, "Vacuna", Day(-40 - animal.Id % 20), "Vacunacion preventiva del lote", vetNameByHerd[animal.HerdId],
+                "Control preventivo", "Aplicacion de vacuna", "Refuerzo segun calendario", "Programar refuerzo", Day(25 + animal.Id % 40)));
+        }
 
+        await context.Set<HealthEvent>().AddRangeAsync(healthEvents, cancellationToken);
+
+        // ---------- Finances ----------
+        var finances = new List<FinancialRecord>();
+        void AddFinances(User rancher, (string Type, string Category, decimal Amount, int DaysAgo, string Description)[] rows) =>
+            finances.AddRange(rows.Select(row => Finance(rancher.Id, row.Type, row.Category, row.Amount, Day(-row.DaysAgo), row.Description)));
+
+        AddFinances(ganadero,
+        [
+            ("Ingreso", "Venta de leche", 4200, 80, "Venta mensual a acopiador local"),
+            ("Egreso", "Alimento", 1350, 74, "Concentrado y forraje"),
+            ("Ingreso", "Venta de ganado", 6800, 61, "Venta de 4 novillos"),
+            ("Ingreso", "Venta de leche", 4350, 50, "Venta mensual a acopiador local"),
+            ("Egreso", "Veterinaria", 540, 44, "Campana de vacunacion"),
+            ("Egreso", "Transporte", 380, 33, "Traslado de ganado a feria"),
+            ("Ingreso", "Venta de leche", 4510, 20, "Venta mensual a acopiador local"),
+            ("Egreso", "Alimento", 1420, 12, "Concentrado y forraje"),
+            ("Ingreso", "Otros", 980, 5, "Venta de pollos y patos")
+        ]);
+        AddFinances(maria,
+        [
+            ("Ingreso", "Otros", 1650, 85, "Venta de lana"),
+            ("Egreso", "Veterinaria", 380, 70, "Botiquin sanitario"),
+            ("Ingreso", "Venta de leche", 3100, 58, "Produccion lechera"),
+            ("Egreso", "Alimento", 1180, 49, "Forraje y sales minerales"),
+            ("Ingreso", "Venta de ganado", 5200, 36, "Venta de terneros"),
+            ("Egreso", "Transporte", 260, 27, "Traslado de lana"),
+            ("Ingreso", "Venta de leche", 3240, 15, "Produccion lechera"),
+            ("Egreso", "Otros", 640, 8, "Reparacion de cercos")
+        ]);
+        AddFinances(jose,
+        [
+            ("Ingreso", "Venta de ganado", 3100, 82, "Lote porcino"),
+            ("Egreso", "Otros", 920, 72, "Mantenimiento de corrales"),
+            ("Egreso", "Alimento", 1560, 63, "Balanceado porcino"),
+            ("Ingreso", "Venta de ganado", 4700, 51, "Venta de 18 cerdos"),
+            ("Egreso", "Veterinaria", 410, 40, "Desparasitacion"),
+            ("Ingreso", "Otros", 1300, 29, "Venta de caballo de paso"),
+            ("Egreso", "Transporte", 330, 18, "Traslado a camal"),
+            ("Ingreso", "Venta de ganado", 3900, 9, "Venta de bovinos")
+        ]);
+        AddFinances(rosa,
+        [
+            ("Ingreso", "Otros", 2100, 60, "Produccion de aves"),
+            ("Egreso", "Veterinaria", 460, 52, "Campana preventiva"),
+            ("Egreso", "Alimento", 880, 30, "Balanceado avicola")
+        ]);
+
+        await context.Set<FinancialRecord>().AddRangeAsync(finances, cancellationToken);
+
+        // ---------- Activities ----------
         await context.Set<FarmActivity>().AddRangeAsync(new[]
         {
-            Activity(ganadero.Id, veterinaria.Id, "Visita sanitaria Los Alamos", "VeterinaryVisit", "2026-06-12", "Alta", "Pendiente"),
-            Activity(ganadero.Id, veterinaria.Id, "Refuerzo aves El Molino", "Vaccination", "2026-06-16", "Media", "Pendiente"),
-            Activity(maria.Id, veterinaria.Id, "Seguimiento caprino", "TreatmentFollowUp", "2026-06-14", "Alta", "Pendiente"),
-            Activity(jose.Id, vetPedro.Id, "Control porcino mensual", "VeterinaryVisit", "2026-06-18", "Media", "Pendiente"),
-            Activity(rosa.Id, vetLucia.Id, "Revision avicola", "VeterinaryVisit", "2026-06-20", "Media", "Pendiente"),
-            Activity(ganadero.Id, null, "Compra de alimento", "FinancialTask", "2026-06-10", "Baja", "Pendiente")
+            Activity(ganadero.Id, veterinaria.Id, "Visita sanitaria Los Alamos", "Visita veterinaria", Day(3), "Alta", "Pendiente"),
+            Activity(ganadero.Id, veterinaria.Id, "Refuerzo de aves El Molino", "Sanitario", Day(7), "Media", "Programado"),
+            Activity(ganadero.Id, null, "Compra de alimento", "Financiero", Day(2), "Baja", "Pendiente"),
+            Activity(ganadero.Id, veterinaria.Id, "Control de peso en Pampa Verde", "Productivo", Day(14), "Media", "Programado"),
+            Activity(ganadero.Id, null, "Ordeno y registro de produccion", "Productivo", Day(-4), "Baja", "Completado"),
+            Activity(maria.Id, veterinaria.Id, "Seguimiento caprino", "Sanitario", Day(4), "Alta", "Pendiente"),
+            Activity(maria.Id, veterinaria.Id, "Esquila de la majada", "Productivo", Day(10), "Media", "Programado"),
+            Activity(maria.Id, null, "Revision de cercos", "Productivo", Day(18), "Baja", "Pendiente"),
+            Activity(maria.Id, veterinaria.Id, "Diagnostico de terneros", "Visita veterinaria", Day(-7), "Alta", "Completado"),
+            Activity(jose.Id, vetPedro.Id, "Control porcino mensual", "Visita veterinaria", Day(5), "Media", "Pendiente"),
+            Activity(jose.Id, vetPedro.Id, "Herraje de caballos", "Productivo", Day(12), "Baja", "Programado"),
+            Activity(jose.Id, veterinaria.Id, "Vacunacion de bovinos Valle Sagrado", "Sanitario", Day(21), "Alta", "Programado"),
+            Activity(jose.Id, null, "Pago de balanceado", "Financiero", Day(1), "Media", "Pendiente"),
+            Activity(rosa.Id, vetLucia.Id, "Revision avicola", "Visita veterinaria", Day(6), "Media", "Pendiente"),
+            Activity(rosa.Id, null, "Limpieza de galpones", "Productivo", Day(9), "Baja", "Programado")
         }, cancellationToken);
+
+        // ---------- Devices ----------
+        Animal FirstOf(string herd, string corral) =>
+            animals.First(animal => animal.HerdId == herdByName[herd].Id && animal.CorralId == corralId[(herdByName[herd].Id, corral)]);
 
         var devices = new List<Device>
         {
-            Device("Balanza Los Alamos", "Scale", "SCL-001", "Online", herds[0].Id, null),
-            Device("Collar Luna", "SmartCollar", "COL-001", "Online", null, animals[0].Id),
-            Device("Arete Tornado", "RFIDTag", "RFID-002", "Online", null, animals[1].Id),
-            Device("Camara termica El Molino", "ThermalCamera", "TH-001", "Maintenance", herds[1].Id, null),
-            Device("Estacion Las Lomas", "WeatherStation", "WTH-001", "Online", herds[6].Id, null)
+            Device("Balanza Los Alamos", "Scale", "SCL-001", "Online", herdByName["Hato Los Alamos"].Id, null),
+            Device("Collar Luna", "SmartCollar", "COL-001", "Online", null, FirstOf("Hato Los Alamos", "Corral Norte").Id),
+            Device("Arete Tornado", "RFIDTag", "RFID-002", "Online", null, FirstOf("Hato Los Alamos", "Corral Sur").Id),
+            Device("Camara termica El Molino", "ThermalCamera", "TH-001", "Maintenance", herdByName["Granja El Molino"].Id, null),
+            Device("Estacion Pampa Verde", "WeatherStation", "WTH-002", "Online", herdByName["Establo Pampa Verde"].Id, null),
+            Device("Balanza Santa Rosa", "Scale", "SCL-003", "Online", herdByName["Finca Santa Rosa"].Id, null),
+            Device("Sensor La Esperanza", "EnvironmentalSensor", "ENV-001", "Online", herdByName["Establo La Esperanza"].Id, null),
+            Device("Collar Estrella", "SmartCollar", "COL-004", "Offline", null, FirstOf("Establo La Esperanza", "Establo Principal").Id),
+            Device("Estacion Alto Verde", "WeatherStation", "WTH-003", "Online", herdByName["Fundo Alto Verde"].Id, null),
+            Device("Balanza San Miguel", "Scale", "SCL-005", "Online", herdByName["Corral San Miguel"].Id, null),
+            Device("Arete Relampago", "RFIDTag", "RFID-006", "Online", null, FirstOf("Fundo Alto Verde", "Cuadra de Caballos").Id),
+            Device("Estacion Las Lomas", "WeatherStation", "WTH-001", "Online", herdByName["Finca Las Lomas"].Id, null)
         };
 
         await context.Set<Device>().AddRangeAsync(devices, cancellationToken);
@@ -163,14 +347,25 @@ public static class AppDbContextSeeder
         await context.Set<DeviceMetric>().AddRangeAsync(new[]
         {
             Metric(devices[0].Id, "Weight", 455, "kg", -18),
+            Metric(devices[0].Id, "Weight", 449, "kg", -90),
             Metric(devices[1].Id, "Temperature", 38.4m, "C", -6),
             Metric(devices[1].Id, "Activity", 74, "%", -4),
             Metric(devices[2].Id, "Scan", 1, "read", -3),
             Metric(devices[3].Id, "SurfaceTemperature", 39.1m, "C", -10),
-            Metric(devices[4].Id, "Humidity", 62, "%", -2),
-            Metric(devices[4].Id, "AirTemperature", 18.7m, "C", -1)
+            Metric(devices[4].Id, "AirTemperature", 16.2m, "C", -2),
+            Metric(devices[4].Id, "Humidity", 71, "%", -2),
+            Metric(devices[5].Id, "Weight", 58, "kg", -12),
+            Metric(devices[6].Id, "AirTemperature", 14.8m, "C", -1),
+            Metric(devices[6].Id, "Humidity", 66, "%", -1),
+            Metric(devices[7].Id, "Temperature", 38.9m, "C", -30),
+            Metric(devices[8].Id, "AirTemperature", 12.5m, "C", -3),
+            Metric(devices[9].Id, "Weight", 118, "kg", -20),
+            Metric(devices[10].Id, "Scan", 1, "read", -5),
+            Metric(devices[11].Id, "Humidity", 62, "%", -2),
+            Metric(devices[11].Id, "AirTemperature", 18.7m, "C", -1)
         }, cancellationToken);
 
+        // ---------- Subscriptions ----------
         var plans = DefaultPlans();
 
         await context.Set<SubscriptionPlan>().AddRangeAsync(plans, cancellationToken);
@@ -180,7 +375,8 @@ public static class AppDbContextSeeder
         {
             Subscription(ganadero.Id, plans[1].Id, "mock_customer_1", "mock_subscription_1"),
             Subscription(veterinaria.Id, plans[2].Id, "mock_customer_2", "mock_subscription_2"),
-            Subscription(maria.Id, plans[0].Id, "mock_customer_3", "mock_subscription_3")
+            Subscription(maria.Id, plans[0].Id, "mock_customer_3", "mock_subscription_3"),
+            Subscription(jose.Id, plans[0].Id, "mock_customer_4", "mock_subscription_4")
         };
 
         await context.Set<Subscription>().AddRangeAsync(subscriptions, cancellationToken);
@@ -190,7 +386,8 @@ public static class AppDbContextSeeder
         {
             Payment(ganadero.Id, subscriptions[0].Id, plans[1].Price, "mock_payment_1"),
             Payment(veterinaria.Id, subscriptions[1].Id, plans[2].Price, "mock_payment_2"),
-            Payment(maria.Id, subscriptions[2].Id, plans[0].Price, "mock_payment_3")
+            Payment(maria.Id, subscriptions[2].Id, plans[0].Price, "mock_payment_3"),
+            Payment(jose.Id, subscriptions[3].Id, plans[0].Price, "mock_payment_4")
         }, cancellationToken);
 
         await context.Set<ReportMetric>().AddRangeAsync(new[]
@@ -203,9 +400,17 @@ public static class AppDbContextSeeder
         await context.SaveChangesAsync(cancellationToken);
     }
 
-    private static Animal Animal(string tag, string name, string species, string breed, string gender, string birthDate, decimal weight, string status, int herdId)
+    /// <summary>A date as the API writes it (yyyy-MM-dd), counted from today.</summary>
+    private static string Day(int daysFromToday) => DateTime.UtcNow.AddDays(daysFromToday).ToString("yyyy-MM-dd");
+
+    private static Herd Farm(string name, string location, User owner, User veterinarian, string mainType)
     {
-        return new Animal { Tag = tag, Name = name, Species = species, Breed = breed, Gender = gender, BirthDate = DateOnly.Parse(birthDate), Weight = weight, Status = status, HerdId = herdId };
+        return new Herd { Name = name, Location = location, Owner = owner.FullName, OwnerId = owner.Id, VeterinarianId = veterinarian.Id, MainType = mainType };
+    }
+
+    private static Animal Animal(string tag, string name, string species, string breed, string gender, string birthDate, decimal weight, string status, int herdId, int corralId)
+    {
+        return new Animal { Tag = tag, Name = name, Species = species, Breed = breed, Gender = gender, BirthDate = DateOnly.Parse(birthDate), Weight = decimal.Round(weight, 1), Status = status, HerdId = herdId, CorralId = corralId };
     }
 
     private static VeterinarianClient Client(int veterinarianId, int rancherId)

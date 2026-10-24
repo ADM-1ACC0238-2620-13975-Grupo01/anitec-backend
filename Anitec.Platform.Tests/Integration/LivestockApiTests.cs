@@ -173,6 +173,58 @@ public class LivestockApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         Assert.Equal(["CorralB-001", "CorralB-002", "CorralB-003"], tags);
     }
 
+    private static object BatchOf(int herdId, int corralId, int quantity, string? name) => new
+    {
+        species = "Pollo", breed = "Cobb 500", gender = "Mixto", weight = 3, status = "Saludable", herdId, corralId, quantity, name
+    };
+
+    private static List<string?> NamesOf(JsonElement animals) =>
+        animals.EnumerateArray().Select(a => a.GetProperty("name").GetString()).ToList();
+
+    [Fact]
+    public async Task CreateAnimalBatch_WithABaseName_NamesTheAnimalsWithConsecutiveNumbers()
+    {
+        var rancher = await Rancher();
+        var herdId = await rancher.CreateHerdAsync();
+        var corralId = await rancher.CreateCorralAsync(herdId, "Galpon 1");
+
+        var response = await rancher.Http.PostAsJsonAsync("/api/v1/animals/bulk", BatchOf(herdId, corralId, 3, "polloComercio"));
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var body = await rancher.ReadAsync(response);
+        Assert.Equal(["polloComercio-001", "polloComercio-002", "polloComercio-003"], NamesOf(body));
+        // The code (tag) is still generated from the corral, so it stays unique and scannable.
+        Assert.Equal(["Galpon1-001", "Galpon1-002", "Galpon1-003"],
+            body.EnumerateArray().Select(a => a.GetProperty("tag").GetString()).ToList());
+    }
+
+    [Fact]
+    public async Task CreateAnimalBatch_WithTheSameBaseNameAgain_ContinuesTheNumbering()
+    {
+        var rancher = await Rancher();
+        var herdId = await rancher.CreateHerdAsync();
+        var corralId = await rancher.CreateCorralAsync(herdId, "Galpon 2");
+        await rancher.Http.PostAsJsonAsync("/api/v1/animals/bulk", BatchOf(herdId, corralId, 3, "polloComercio"));
+
+        var second = await rancher.Http.PostAsJsonAsync("/api/v1/animals/bulk", BatchOf(herdId, corralId, 2, "polloComercio"));
+        var other = await rancher.Http.PostAsJsonAsync("/api/v1/animals/bulk", BatchOf(herdId, corralId, 1, "polloPostura"));
+
+        Assert.Equal(["polloComercio-004", "polloComercio-005"], NamesOf(await rancher.ReadAsync(second)));
+        Assert.Equal(["polloPostura-001"], NamesOf(await rancher.ReadAsync(other)));
+    }
+
+    [Fact]
+    public async Task CreateAnimalBatch_WithoutABaseName_UsesTheGeneratedCodeAsName()
+    {
+        var rancher = await Rancher();
+        var herdId = await rancher.CreateHerdAsync();
+        var corralId = await rancher.CreateCorralAsync(herdId, "Galpon 3");
+
+        var response = await rancher.Http.PostAsJsonAsync("/api/v1/animals/bulk", BatchOf(herdId, corralId, 2, "   "));
+
+        Assert.Equal(["Galpon3-001", "Galpon3-002"], NamesOf(await rancher.ReadAsync(response)));
+    }
+
     [Fact]
     public async Task UpdateStatusInBulk_ChangesEveryAnimal()
     {
