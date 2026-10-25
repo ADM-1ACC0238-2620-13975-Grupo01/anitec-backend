@@ -254,7 +254,9 @@ using (var scope = app.Services.CreateScope())
     else
         context.Database.Migrate();
 
-    if (app.Environment.IsDevelopment())
+    // The demo data is on by default only in development. A hosted environment can ask for it with the setting
+    // SeedDemoData=true (an environment variable on the host); it still only fills a database without users.
+    if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("SeedDemoData"))
     {
         var hashingService = services.GetRequiredService<IHashingService>();
         await AppDbContextSeeder.SeedDevelopmentDataAsync(context, hashingService);
