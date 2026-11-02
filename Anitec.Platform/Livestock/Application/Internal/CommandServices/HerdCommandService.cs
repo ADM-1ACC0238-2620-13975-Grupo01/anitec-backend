@@ -8,9 +8,13 @@ using Anitec.Platform.Shared.Domain.Repositories;
 
 namespace Anitec.Platform.Livestock.Application.Internal.CommandServices;
 
+/// <summary>
+/// Handles the commands that create, update and delete herds (farms).
+/// </summary>
 public class HerdCommandService(IHerdRepository repository, IUnitOfWork unitOfWork)
     : IHerdCommandService
 {
+    /// <summary>Creates a new herd.</summary>
     public async Task<Result<Herd>> Handle(CreateHerdCommand command, CancellationToken cancellationToken)
     {
         var entity = new Herd(command);
@@ -19,6 +23,7 @@ public class HerdCommandService(IHerdRepository repository, IUnitOfWork unitOfWo
         return Result<Herd>.Success(entity);
     }
 
+    /// <summary>Updates a herd; fails with HerdNotFound if it does not exist.</summary>
     public async Task<Result<Herd>> Handle(UpdateHerdCommand command, CancellationToken cancellationToken)
     {
         var entity = await repository.FindByIdAsync(command.Id, cancellationToken);
@@ -35,6 +40,7 @@ public class HerdCommandService(IHerdRepository repository, IUnitOfWork unitOfWo
         return Result<Herd>.Success(entity);
     }
 
+    /// <summary>Deletes a herd; fails with HerdNotFound if it does not exist.</summary>
     public async Task<Result> Handle(DeleteHerdCommand command, CancellationToken cancellationToken)
     {
         var entity = await repository.FindByIdAsync(command.Id, cancellationToken);
