@@ -92,6 +92,24 @@ Si Swagger abre con HTTPS, tambien puede aparecer como:
 https://localhost:7003/swagger
 ```
 
+## Pagos De Prueba Con Stripe
+
+Los pagos de suscripcion usan Stripe en modo de prueba. La clave secreta de prueba (`sk_test_...`) no se guarda en el repositorio: `appsettings.json` y `appsettings.Development.json` solo tienen el marcador `change_me`, y el backend responde `400` con "Stripe test secret key is not configured" mientras no haya una clave real.
+
+Para probar los pagos en local, define la clave como variable de entorno en la misma terminal donde se inicia el backend. Escribe tu propia clave de prueba en lugar de `sk_test_...`:
+
+```powershell
+$env:StripeSettings__SecretKey='sk_test_...'
+dotnet run --project Anitec.Platform
+```
+
+- La variable vale solo para esa ventana de terminal; al cerrarla se pierde y no queda en ningun archivo.
+- Hay que reiniciar el backend despues de definirla, porque la configuracion se lee al arrancar.
+- Usa siempre claves de prueba (`sk_test_...`), nunca las `sk_live_...`. La clave publicable (`pk_...`) y `StripeSettings__WebhookSecret` no se usan.
+- Para comprobarlo, ejecuta `POST /api/v1/subscriptions/stripe-checkout` desde Swagger con `{"planId":1,"platform":"android"}`: debe responder `200` con `sessionId` y `checkoutUrl`.
+- En el emulador de Android, la aplicacion de depuracion llama a este backend en `http://10.0.2.2:5191` y Stripe vuelve a una pagina del propio backend que abre la aplicacion. Para pagar se usa la tarjeta de prueba `4242 4242 4242 4242`, con cualquier fecha futura y cualquier CVC.
+- En el servicio publicado (Render) la clave se configura como la variable de entorno `StripeSettings__SecretKey` del panel Environment.
+
 ## Ejecucion Completa Con Frontend
 
 1. Iniciar MySQL.
