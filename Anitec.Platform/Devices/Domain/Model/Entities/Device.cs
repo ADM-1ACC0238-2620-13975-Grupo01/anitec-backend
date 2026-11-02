@@ -2,6 +2,10 @@ using Anitec.Platform.Devices.Domain.Model.Commands;
 
 namespace Anitec.Platform.Devices.Domain.Model.Entities;
 
+/// <summary>
+/// An IoT device on the farm, such as a scale, smart collar, thermal camera, ear tag or weather station.
+/// It can be attached to a whole herd or to a single animal.
+/// </summary>
 public class Device
 {
     public Device()
@@ -26,8 +30,11 @@ public class Device
     public int Id { get; set; }
     public string Name { get; set; }
     public string Type { get; set; }
+    /// <summary>Manufacturer serial number of the device.</summary>
     public string SerialNumber { get; set; }
     public string Status { get; set; }
+    /// <summary>Herd (farm) the device is installed in, if any.</summary>
     public int? HerdId { get; set; }
+    /// <summary>Animal wearing the device, if any.</summary>
     public int? AnimalId { get; set; }
 }
