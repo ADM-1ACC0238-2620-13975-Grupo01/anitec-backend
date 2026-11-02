@@ -3,6 +3,10 @@ using Microsoft.EntityFrameworkCore.Design;
 
 namespace Anitec.Platform.Shared.Infrastructure.Persistence.EntityFrameworkCore.Configuration;
 
+/// <summary>
+/// Creates the <see cref="AppDbContext"/> for the dotnet-ef tools when migrations are added or applied.
+/// It reads the connection string from ANITEC_CONNECTION_STRING and falls back to the local MySQL database.
+/// </summary>
 public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
 {
     public AppDbContext CreateDbContext(string[] args)
