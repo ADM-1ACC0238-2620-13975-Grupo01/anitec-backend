@@ -8,9 +8,13 @@ using Anitec.Platform.Shared.Domain.Repositories;
 
 namespace Anitec.Platform.Subscriptions.Application.Internal.CommandServices;
 
+/// <summary>
+/// Handles the commands that create, update and cancel user subscriptions.
+/// </summary>
 public class SubscriptionCommandService(ISubscriptionRepository repository, IUnitOfWork unitOfWork)
     : ISubscriptionCommandService
 {
+    /// <summary>Creates a new subscription.</summary>
     public async Task<Result<Subscription>> Handle(CreateSubscriptionCommand command, CancellationToken cancellationToken)
     {
         var entity = new Subscription(command);
@@ -19,6 +23,7 @@ public class SubscriptionCommandService(ISubscriptionRepository repository, IUni
         return Result<Subscription>.Success(entity);
     }
 
+    /// <summary>Updates a subscription; fails with SubscriptionNotFound if it does not exist.</summary>
     public async Task<Result<Subscription>> Handle(UpdateSubscriptionCommand command, CancellationToken cancellationToken)
     {
         var entity = await repository.FindByIdAsync(command.Id, cancellationToken);
@@ -36,6 +41,7 @@ public class SubscriptionCommandService(ISubscriptionRepository repository, IUni
         return Result<Subscription>.Success(entity);
     }
 
+    /// <summary>Deletes a subscription; fails with SubscriptionNotFound if it does not exist.</summary>
     public async Task<Result> Handle(DeleteSubscriptionCommand command, CancellationToken cancellationToken)
     {
         var entity = await repository.FindByIdAsync(command.Id, cancellationToken);
