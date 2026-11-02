@@ -11,6 +11,10 @@ using Swashbuckle.AspNetCore.Annotations;
 
 namespace Anitec.Platform.Analytics.Interfaces.Rest;
 
+/// <summary>
+/// REST API for the report metrics shown on the analytics dashboard.
+/// Available to Rancher and Veterinarian roles.
+/// </summary>
 [Authorize("Rancher", "Veterinarian")]
 [ApiController]
 [Route("api/v1/report-metrics")]
@@ -20,6 +24,7 @@ public class ReportMetricsController(
     IReportMetricCommandService commandService,
     IReportMetricQueryService queryService) : ControllerBase
 {
+    /// <summary>Lists all report metrics.</summary>
     [HttpGet]
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
     {
@@ -27,6 +32,7 @@ public class ReportMetricsController(
         return Ok(result.Select(ReportMetricResourceFromEntityAssembler.ToResourceFromEntity));
     }
 
+    /// <summary>Gets one report metric by id.</summary>
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id, CancellationToken cancellationToken)
     {
@@ -35,6 +41,7 @@ public class ReportMetricsController(
         return Ok(ReportMetricResourceFromEntityAssembler.ToResourceFromEntity(result));
     }
 
+    /// <summary>Creates a new report metric.</summary>
     [HttpPost]
     public async Task<IActionResult> Create(CreateReportMetricResource resource, CancellationToken cancellationToken)
     {
@@ -44,6 +51,7 @@ public class ReportMetricsController(
             ReportMetricResourceFromEntityAssembler.ToResourceFromEntity(result.Value));
     }
 
+    /// <summary>Updates an existing report metric by id.</summary>
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, CreateReportMetricResource resource, CancellationToken cancellationToken)
     {
@@ -53,6 +61,7 @@ public class ReportMetricsController(
         return Ok(ReportMetricResourceFromEntityAssembler.ToResourceFromEntity(result.Value!));
     }
 
+    /// <summary>Deletes a report metric by id.</summary>
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
