@@ -10,6 +10,9 @@ using Microsoft.Extensions.Localization;
 
 namespace Anitec.Platform.Shared.Interfaces.Rest.ProblemDetails;
 
+/// <summary>
+/// Builds RFC 7807 problem details responses whose title and detail are localized (English or Spanish).
+/// </summary>
 public class ProblemDetailsFactory
 {
     private readonly Microsoft.AspNetCore.Mvc.Infrastructure.ProblemDetailsFactory
@@ -29,6 +32,10 @@ public class ProblemDetailsFactory
         _aspNetCoreProblemDetailsFactory = aspNetCoreProblemDetailsFactory; // Corrected assignment
     }
 
+    /// <summary>
+    /// Creates a problem details response titled with the localized name of a bounded context error.
+    /// Without an error it uses the generic error title.
+    /// </summary>
     public IActionResult CreateProblemDetails(
         ControllerBase controller,
         int statusCode,
@@ -65,7 +72,9 @@ public class ProblemDetailsFactory
         return controller.StatusCode(statusCode, problemDetails);
     }
 
-    // Overload for when there's no specific error enum, just a generic message
+    /// <summary>
+    /// Creates a problem details response from resource keys, formatting the detail with the given arguments.
+    /// </summary>
     public IActionResult CreateProblemDetails(
         ControllerBase controller,
         int statusCode,
