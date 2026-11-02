@@ -8,9 +8,13 @@ using Anitec.Platform.Shared.Domain.Repositories;
 
 namespace Anitec.Platform.Sanitary.Application.Internal.CommandServices;
 
+/// <summary>
+/// Handles the commands that add, update and delete entries in an animal's medical history.
+/// </summary>
 public class HealthEventCommandService(IHealthEventRepository repository, IUnitOfWork unitOfWork)
     : IHealthEventCommandService
 {
+    /// <summary>Records a new health event.</summary>
     public async Task<Result<HealthEvent>> Handle(CreateHealthEventCommand command, CancellationToken cancellationToken)
     {
         var entity = new HealthEvent(command);
@@ -19,6 +23,7 @@ public class HealthEventCommandService(IHealthEventRepository repository, IUnitO
         return Result<HealthEvent>.Success(entity);
     }
 
+    /// <summary>Updates a health event; fails with HealthEventNotFound if it does not exist.</summary>
     public async Task<Result<HealthEvent>> Handle(UpdateHealthEventCommand command, CancellationToken cancellationToken)
     {
         var entity = await repository.FindByIdAsync(command.Id, cancellationToken);
@@ -39,6 +44,7 @@ public class HealthEventCommandService(IHealthEventRepository repository, IUnitO
         return Result<HealthEvent>.Success(entity);
     }
 
+    /// <summary>Deletes a health event; fails with HealthEventNotFound if it does not exist.</summary>
     public async Task<Result> Handle(DeleteHealthEventCommand command, CancellationToken cancellationToken)
     {
         var entity = await repository.FindByIdAsync(command.Id, cancellationToken);
