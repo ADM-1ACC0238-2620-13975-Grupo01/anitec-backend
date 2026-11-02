@@ -6,9 +6,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Anitec.Platform.Clients.Infrastructure.Persistence.EntityFrameworkCore.Repositories;
 
+/// <summary>
+/// EF Core repository for the links between veterinarians and ranchers.
+/// </summary>
 public class VeterinarianClientRepository(AppDbContext context)
     : BaseRepository<VeterinarianClient>(context), IVeterinarianClientRepository
 {
+    /// <summary>Lists every rancher link of a veterinarian.</summary>
     public async Task<IEnumerable<VeterinarianClient>> FindByVeterinarianIdAsync(
         int veterinarianId,
         CancellationToken cancellationToken)
@@ -18,6 +22,7 @@ public class VeterinarianClientRepository(AppDbContext context)
             .ToListAsync(cancellationToken);
     }
 
+    /// <summary>Finds the link between a veterinarian and a rancher, or null if there is none.</summary>
     public async Task<VeterinarianClient?> FindByVeterinarianIdAndRancherIdAsync(
         int veterinarianId,
         int rancherId,
@@ -29,6 +34,7 @@ public class VeterinarianClientRepository(AppDbContext context)
                 cancellationToken);
     }
 
+    /// <summary>Checks whether a veterinarian and a rancher are already linked.</summary>
     public async Task<bool> ExistsByVeterinarianIdAndRancherIdAsync(
         int veterinarianId,
         int rancherId,
