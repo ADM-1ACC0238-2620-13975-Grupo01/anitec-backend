@@ -9,9 +9,13 @@ using Anitec.Platform.Shared.Domain.Repositories;
 
 namespace Anitec.Platform.Livestock.Application.Internal.CommandServices;
 
+/// <summary>
+/// Handles the commands that create, change and delete animals, one by one or in bulk.
+/// </summary>
 public class AnimalCommandService(IAnimalRepository repository, ICorralRepository corralRepository, IUnitOfWork unitOfWork)
     : IAnimalCommandService
 {
+    /// <summary>Registers a new animal.</summary>
     public async Task<Result<Animal>> Handle(CreateAnimalCommand command, CancellationToken cancellationToken)
     {
         var entity = new Animal(command);
@@ -20,6 +24,7 @@ public class AnimalCommandService(IAnimalRepository repository, ICorralRepositor
         return Result<Animal>.Success(entity);
     }
 
+    /// <summary>Replaces the data of an animal; fails if it does not exist.</summary>
     public async Task<Result<Animal>> Handle(UpdateAnimalCommand command, CancellationToken cancellationToken)
     {
         var entity = await repository.FindByIdAsync(command.Id, cancellationToken);
@@ -43,6 +48,7 @@ public class AnimalCommandService(IAnimalRepository repository, ICorralRepositor
         return Result<Animal>.Success(entity);
     }
 
+    /// <summary>Deletes an animal; fails if it does not exist.</summary>
     public async Task<Result> Handle(DeleteAnimalCommand command, CancellationToken cancellationToken)
     {
         var entity = await repository.FindByIdAsync(command.Id, cancellationToken);
@@ -52,6 +58,10 @@ public class AnimalCommandService(IAnimalRepository repository, ICorralRepositor
         return Result.Success();
     }
 
+    /// <summary>
+    /// Creates between 1 and 500 animals in a corral. Tags follow the corral name ("CORRAL-001") and continue
+    /// after the animals already in it.
+    /// </summary>
     public async Task<Result<List<Animal>>> Handle(CreateAnimalBatchCommand command, CancellationToken cancellationToken)
     {
         if (command.Quantity is < 1 or > 500)
@@ -100,6 +110,7 @@ public class AnimalCommandService(IAnimalRepository repository, ICorralRepositor
         return Result<List<Animal>>.Success(created);
     }
 
+    /// <summary>Sets the same status on the selected animals, skipping ids that do not exist.</summary>
     public async Task<Result<List<Animal>>> Handle(UpdateAnimalsStatusCommand command, CancellationToken cancellationToken)
     {
         if (command.AnimalIds.Count == 0)
@@ -119,6 +130,7 @@ public class AnimalCommandService(IAnimalRepository repository, ICorralRepositor
         return Result<List<Animal>>.Success(updated);
     }
 
+    /// <summary>Deletes the selected animals, skipping ids that do not exist.</summary>
     public async Task<Result> Handle(DeleteAnimalsCommand command, CancellationToken cancellationToken)
     {
         if (command.AnimalIds.Count == 0)
