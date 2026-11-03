@@ -35,6 +35,8 @@ public class FarmActivityCommandService(IFarmActivityRepository repository, IUni
         entity.Date = command.Date;
         entity.Priority = command.Priority;
         entity.Status = command.Status;
+        // Actualiza la entidad en el repositorio, persiste los cambios mediante la unidad de trabajo (Unit of Work)
+        // y retorna un resultado exitoso envuelto con la actividad agrícola actualizada.
 
         repository.Update(entity);
         await unitOfWork.CompleteAsync(cancellationToken);
