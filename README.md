@@ -2,6 +2,8 @@
 
 Backend ASP.NET Core para AniTec.
 
+<!-- Documentation maintenance marker: pass 01. -->
+
 ## Tecnologias
 
 - ASP.NET Core
