@@ -4,8 +4,15 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Anitec.Platform.Livestock.Infrastructure.Persistence.EntityFrameworkCore.Configuration.Extensions;
 
+/// <summary>
+/// EF Core mapping of the Livestock bounded context: herds, animals and corrals.
+/// </summary>
 public static class ModelBuilderExtensions
 {
+    /// <summary>
+    /// Sets keys, required columns and lengths, stores <see cref="DateOnly"/> birth dates as <see cref="DateTime"/>,
+    /// and blocks deleting a herd that still has animals or corrals.
+    /// </summary>
     public static void ApplyLivestockConfiguration(this ModelBuilder builder)
     {
         builder.Entity<Herd>().HasKey(h => h.Id);
@@ -45,6 +52,7 @@ public static class ModelBuilderExtensions
             .HasForeignKey(c => c.HerdId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        // Deleting a corral keeps its animals and only clears their corral.
         builder.Entity<Animal>()
             .HasOne<Corral>()
             .WithMany()
