@@ -8,9 +8,13 @@ using Anitec.Platform.Shared.Domain.Repositories;
 
 namespace Anitec.Platform.Devices.Application.Internal.CommandServices;
 
+/// <summary>
+/// Registers, edits and removes IoT devices assigned to a herd or an animal.
+/// </summary>
 public class DeviceCommandService(IDeviceRepository repository, IUnitOfWork unitOfWork)
     : IDeviceCommandService
 {
+    /// <summary>Registers a new device from the command.</summary>
     public async Task<Result<Device>> Handle(CreateDeviceCommand command, CancellationToken cancellationToken)
     {
         var entity = new Device(command);
@@ -19,6 +23,7 @@ public class DeviceCommandService(IDeviceRepository repository, IUnitOfWork unit
         return Result<Device>.Success(entity);
     }
 
+    /// <summary>Updates name, type, serial number, status and assignment of an existing device.</summary>
     public async Task<Result<Device>> Handle(UpdateDeviceCommand command, CancellationToken cancellationToken)
     {
         var entity = await repository.FindByIdAsync(command.Id, cancellationToken);
@@ -35,6 +40,7 @@ public class DeviceCommandService(IDeviceRepository repository, IUnitOfWork unit
         return Result<Device>.Success(entity);
     }
 
+    /// <summary>Deletes a device; fails when the id does not exist.</summary>
     public async Task<Result> Handle(DeleteDeviceCommand command, CancellationToken cancellationToken)
     {
         var entity = await repository.FindByIdAsync(command.Id, cancellationToken);
