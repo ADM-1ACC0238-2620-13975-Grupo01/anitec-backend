@@ -4,8 +4,15 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Anitec.Platform.Subscriptions.Infrastructure.Persistence.EntityFrameworkCore.Configuration.Extensions;
 
+/// <summary>
+/// EF Core mapping of the Subscriptions bounded context: plans, subscriptions and payments.
+/// </summary>
 public static class ModelBuilderExtensions
 {
+    /// <summary>
+    /// Money uses precision (10, 2). A plan in use cannot be deleted, and deleting a subscription
+    /// also deletes its payments.
+    /// </summary>
     public static void ApplySubscriptionsConfiguration(this ModelBuilder builder)
     {
         builder.Entity<SubscriptionPlan>().HasKey(p => p.Id);
