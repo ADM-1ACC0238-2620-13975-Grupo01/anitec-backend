@@ -8,9 +8,13 @@ using Anitec.Platform.Shared.Domain.Repositories;
 
 namespace Anitec.Platform.Financial.Application.Internal.CommandServices;
 
+/// <summary>
+/// Writes the income and expense records of a rancher.
+/// </summary>
 public class FinancialRecordCommandService(IFinancialRecordRepository repository, IUnitOfWork unitOfWork)
     : IFinancialRecordCommandService
 {
+    /// <summary>Saves a new income or expense record.</summary>
     public async Task<Result<FinancialRecord>> Handle(CreateFinancialRecordCommand command, CancellationToken cancellationToken)
     {
         var entity = new FinancialRecord(command);
@@ -19,6 +23,7 @@ public class FinancialRecordCommandService(IFinancialRecordRepository repository
         return Result<FinancialRecord>.Success(entity);
     }
 
+    /// <summary>Updates owner, type, category, amount, date and description of a record.</summary>
     public async Task<Result<FinancialRecord>> Handle(UpdateFinancialRecordCommand command, CancellationToken cancellationToken)
     {
         var entity = await repository.FindByIdAsync(command.Id, cancellationToken);
@@ -35,6 +40,7 @@ public class FinancialRecordCommandService(IFinancialRecordRepository repository
         return Result<FinancialRecord>.Success(entity);
     }
 
+    /// <summary>Deletes a record; fails when the id does not exist.</summary>
     public async Task<Result> Handle(DeleteFinancialRecordCommand command, CancellationToken cancellationToken)
     {
         var entity = await repository.FindByIdAsync(command.Id, cancellationToken);
