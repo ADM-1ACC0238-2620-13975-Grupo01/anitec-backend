@@ -24,6 +24,8 @@ namespace Anitec.Platform.Activities.Interfaces.Rest;
 [Route("api/v1/farm-events")]
 [Produces(MediaTypeNames.Application.Json)]
 [SwaggerTag("Available FarmActivities endpoints")]
+// Controlador de la API REST para gestionar las operaciones relacionadas con las actividades agrícolas,
+// inyectando los servicios de comandos, consultas y control de acceso bajo un constructor primario de C#.
 public class FarmActivitiesController(
     IFarmActivityCommandService commandService,
     IFarmActivityQueryService queryService,
