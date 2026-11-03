@@ -8,9 +8,13 @@ using Anitec.Platform.Shared.Domain.Repositories;
 
 namespace Anitec.Platform.Analytics.Application.Internal.CommandServices;
 
+/// <summary>
+/// Maintains the metrics shown on the analytics dashboard.
+/// </summary>
 public class ReportMetricCommandService(IReportMetricRepository repository, IUnitOfWork unitOfWork)
     : IReportMetricCommandService
 {
+    /// <summary>Adds a new dashboard metric.</summary>
     public async Task<Result<ReportMetric>> Handle(CreateReportMetricCommand command, CancellationToken cancellationToken)
     {
         var entity = new ReportMetric(command);
@@ -19,6 +23,7 @@ public class ReportMetricCommandService(IReportMetricRepository repository, IUni
         return Result<ReportMetric>.Success(entity);
     }
 
+    /// <summary>Updates the label, value and trend of a metric.</summary>
     public async Task<Result<ReportMetric>> Handle(UpdateReportMetricCommand command, CancellationToken cancellationToken)
     {
         var entity = await repository.FindByIdAsync(command.Id, cancellationToken);
@@ -32,6 +37,7 @@ public class ReportMetricCommandService(IReportMetricRepository repository, IUni
         return Result<ReportMetric>.Success(entity);
     }
 
+    /// <summary>Deletes a metric; fails when the id does not exist.</summary>
     public async Task<Result> Handle(DeleteReportMetricCommand command, CancellationToken cancellationToken)
     {
         var entity = await repository.FindByIdAsync(command.Id, cancellationToken);
