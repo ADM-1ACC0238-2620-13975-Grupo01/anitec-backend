@@ -8,9 +8,13 @@ using Anitec.Platform.Shared.Domain.Repositories;
 
 namespace Anitec.Platform.Activities.Application.Internal.CommandServices;
 
+/// <summary>
+/// Creates, updates and deletes farm activities and saves each change in one unit of work.
+/// </summary>
 public class FarmActivityCommandService(IFarmActivityRepository repository, IUnitOfWork unitOfWork)
     : IFarmActivityCommandService
 {
+    /// <summary>Stores a new activity built from the command.</summary>
     public async Task<Result<FarmActivity>> Handle(CreateFarmActivityCommand command, CancellationToken cancellationToken)
     {
         var entity = new FarmActivity(command);
@@ -19,6 +23,7 @@ public class FarmActivityCommandService(IFarmActivityRepository repository, IUni
         return Result<FarmActivity>.Success(entity);
     }
 
+    /// <summary>Replaces the editable fields of an activity; fails when the id does not exist.</summary>
     public async Task<Result<FarmActivity>> Handle(UpdateFarmActivityCommand command, CancellationToken cancellationToken)
     {
         var entity = await repository.FindByIdAsync(command.Id, cancellationToken);
@@ -36,6 +41,7 @@ public class FarmActivityCommandService(IFarmActivityRepository repository, IUni
         return Result<FarmActivity>.Success(entity);
     }
 
+    /// <summary>Removes an activity; fails when the id does not exist.</summary>
     public async Task<Result> Handle(DeleteFarmActivityCommand command, CancellationToken cancellationToken)
     {
         var entity = await repository.FindByIdAsync(command.Id, cancellationToken);
