@@ -3,7 +3,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Anitec.Platform.Activities.Infrastructure.Persistence.EntityFrameworkCore.Configuration.Extensions;
-
+// Clase de extensión para ModelBuilder que configura el mapeo entidad-relación de Entity Framework Core
+// para la entidad FarmActivity, definiendo llaves primarias, restricciones de nulabilidad, longitudes máximas
+// y conversiones de tipos para la fecha.
 public static class ModelBuilderExtensions
 {
     public static void ApplyActivitiesConfiguration(this ModelBuilder builder)
