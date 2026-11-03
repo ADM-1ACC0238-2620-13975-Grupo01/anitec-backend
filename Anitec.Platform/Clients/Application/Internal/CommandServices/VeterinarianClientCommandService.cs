@@ -8,10 +8,14 @@ using Anitec.Platform.Shared.Domain.Repositories;
 
 namespace Anitec.Platform.Clients.Application.Internal.CommandServices;
 
+/// <summary>
+/// Links and unlinks veterinarians and ranchers. A pair can only be linked once.
+/// </summary>
 public class VeterinarianClientCommandService(
     IVeterinarianClientRepository repository,
     IUnitOfWork unitOfWork) : IVeterinarianClientCommandService
 {
+    /// <summary>Creates the link unless the same veterinarian and rancher are already linked.</summary>
     public async Task<Result<VeterinarianClient>> Handle(CreateVeterinarianClientCommand command, CancellationToken cancellationToken)
     {
         var exists = await repository.ExistsByVeterinarianIdAndRancherIdAsync(
@@ -30,6 +34,7 @@ public class VeterinarianClientCommandService(
         return Result<VeterinarianClient>.Success(entity);
     }
 
+    /// <summary>Removes the link found by veterinarian and rancher ids; fails when there is none.</summary>
     public async Task<Result> Handle(DeleteVeterinarianClientCommand command, CancellationToken cancellationToken)
     {
         var entity = await repository.FindByVeterinarianIdAndRancherIdAsync(
