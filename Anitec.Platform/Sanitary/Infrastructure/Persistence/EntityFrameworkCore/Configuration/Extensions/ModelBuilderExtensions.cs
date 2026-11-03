@@ -5,8 +5,15 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace Anitec.Platform.Sanitary.Infrastructure.Persistence.EntityFrameworkCore.Configuration.Extensions;
 
+/// <summary>
+/// EF Core mapping of the Sanitary bounded context.
+/// </summary>
 public static class ModelBuilderExtensions
 {
+    /// <summary>
+    /// Maps health events, stores their dates as <see cref="DateTime"/>, and deletes the events
+    /// of an animal when the animal is deleted.
+    /// </summary>
     public static void ApplySanitaryConfiguration(this ModelBuilder builder)
     {
         builder.Entity<HealthEvent>().HasKey(h => h.Id);
