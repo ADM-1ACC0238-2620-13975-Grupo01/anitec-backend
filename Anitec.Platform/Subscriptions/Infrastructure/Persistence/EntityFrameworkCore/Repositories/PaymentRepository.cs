@@ -6,8 +6,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Anitec.Platform.Subscriptions.Infrastructure.Persistence.EntityFrameworkCore.Repositories;
 
+/// <summary>
+/// EF Core repository of payments.
+/// </summary>
 public class PaymentRepository(AppDbContext context) : BaseRepository<Payment>(context), IPaymentRepository
 {
+    /// <summary>Payments of a user, newest first.</summary>
     public async Task<IEnumerable<Payment>> FindByUserIdAsync(int userId, CancellationToken cancellationToken)
     {
         return await Context.Set<Payment>()
@@ -16,6 +20,9 @@ public class PaymentRepository(AppDbContext context) : BaseRepository<Payment>(c
             .ToListAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// Payment with the id given by the payment provider, or null.
+    /// </summary>
     public async Task<Payment?> FindByProviderPaymentIdAsync(string providerPaymentId, CancellationToken cancellationToken)
     {
         return await Context.Set<Payment>()
