@@ -8,9 +8,13 @@ using Anitec.Platform.Shared.Domain.Repositories;
 
 namespace Anitec.Platform.Subscriptions.Application.Internal.CommandServices;
 
+/// <summary>
+/// Manages the catalog of subscription plans offered to ranchers.
+/// </summary>
 public class SubscriptionPlanCommandService(ISubscriptionPlanRepository repository, IUnitOfWork unitOfWork)
     : ISubscriptionPlanCommandService
 {
+    /// <summary>Adds a new plan to the catalog.</summary>
     public async Task<Result<SubscriptionPlan>> Handle(CreateSubscriptionPlanCommand command, CancellationToken cancellationToken)
     {
         var entity = new SubscriptionPlan(command);
@@ -19,6 +23,7 @@ public class SubscriptionPlanCommandService(ISubscriptionPlanRepository reposito
         return Result<SubscriptionPlan>.Success(entity);
     }
 
+    /// <summary>Updates name, price, Stripe price id, animal limit and active flag of a plan.</summary>
     public async Task<Result<SubscriptionPlan>> Handle(UpdateSubscriptionPlanCommand command, CancellationToken cancellationToken)
     {
         var entity = await repository.FindByIdAsync(command.Id, cancellationToken);
@@ -34,6 +39,7 @@ public class SubscriptionPlanCommandService(ISubscriptionPlanRepository reposito
         return Result<SubscriptionPlan>.Success(entity);
     }
 
+    /// <summary>Deletes a plan; fails when the id does not exist.</summary>
     public async Task<Result> Handle(DeleteSubscriptionPlanCommand command, CancellationToken cancellationToken)
     {
         var entity = await repository.FindByIdAsync(command.Id, cancellationToken);
