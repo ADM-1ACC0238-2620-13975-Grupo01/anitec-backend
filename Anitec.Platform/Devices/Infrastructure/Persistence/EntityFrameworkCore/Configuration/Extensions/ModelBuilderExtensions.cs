@@ -4,8 +4,14 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Anitec.Platform.Devices.Infrastructure.Persistence.EntityFrameworkCore.Configuration.Extensions;
 
+/// <summary>
+/// EF Core mapping of the Devices bounded context.
+/// </summary>
 public static class ModelBuilderExtensions
 {
+    /// <summary>
+    /// Maps devices. When their herd or animal is deleted the device is kept and only unassigned.
+    /// </summary>
     public static void ApplyDevicesConfiguration(this ModelBuilder builder)
     {
         builder.Entity<Device>().HasKey(d => d.Id);
