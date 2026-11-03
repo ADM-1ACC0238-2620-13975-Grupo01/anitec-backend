@@ -7,8 +7,12 @@ using Anitec.Platform.Subscriptions.Domain.Repositories;
 
 namespace Anitec.Platform.Subscriptions.Application.Internal.CommandServices;
 
+/// <summary>
+/// Records the payments made for a subscription.
+/// </summary>
 public class PaymentCommandService(IPaymentRepository repository, IUnitOfWork unitOfWork) : IPaymentCommandService
 {
+    /// <summary>Saves a payment confirmed by the payment provider.</summary>
     public async Task<Result<Payment>> Handle(CreatePaymentCommand command, CancellationToken cancellationToken)
     {
         var payment = new Payment(command);
