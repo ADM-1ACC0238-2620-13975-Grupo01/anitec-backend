@@ -70,7 +70,7 @@ public class HealthEventsApiTests(ApiFactory factory) : IClassFixture<ApiFactory
         var rancher = await ApiTestClient.SignedInAsync(factory.CreateClient());
         var animalId = await rancher.CreateAnimalAsync(await rancher.CreateHerdAsync(), null);
         var vet = await ApiTestClient.SignedInAsync(factory.CreateClient(), "Veterinarian");
-        await vet.AddClientAsync(rancher.UserId);
+        await vet.AddClientAsync(rancher);
 
         var response = await vet.Http.PostAsJsonAsync("/api/v1/health-events", NewEvent(animalId, "Tratamiento"));
 

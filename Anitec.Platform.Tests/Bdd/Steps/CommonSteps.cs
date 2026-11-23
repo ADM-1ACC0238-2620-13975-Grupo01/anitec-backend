@@ -39,7 +39,7 @@ public class CommonSteps(ApiScenarioContext ctx)
         ctx.User = await ApiTestClient.SignedInAsync(SharedApi.Factory.CreateClient(), role);
 
     [Given("I am a client of the rancher")]
-    public async Task GivenIAmAClientOfTheRancher() => await ctx.User!.AddClientAsync(ctx.Rancher!.UserId);
+    public async Task GivenIAmAClientOfTheRancher() => await ctx.User!.AddClientAsync(ctx.Rancher!);
 
     [When("I sign up as a {string}")]
     public async Task WhenISignUpAs(string role) => await SignUpAsync(role);
