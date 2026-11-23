@@ -141,7 +141,7 @@ public class VeterinarianClientsController(
 
     /// <summary>
     /// Maps a relationship entity plus related herds/animals into the API client resource
-    /// (includes herd count and animal count for the rancher).
+    /// (includes herd count and animal count for the rancher, zero until the link is accepted).
     /// </summary>
     private static VeterinarianClientResource ToClientResource(
         VeterinarianClient relationship,
@@ -149,7 +149,10 @@ public class VeterinarianClientsController(
         IEnumerable<Herd> herds,
         IEnumerable<Animal> animals)
     {
-        var rancherHerds = herds.Where(herd => herd.OwnerId == relationship.RancherId).ToList();
+        // The totals are the rancher's data: they are only given once the rancher accepted the veterinarian.
+        var rancherHerds = relationship.IsActive
+            ? herds.Where(herd => herd.OwnerId == relationship.RancherId).ToList()
+            : [];
         var rancherHerdIds = rancherHerds.Select(herd => herd.Id).ToHashSet();
         return new VeterinarianClientResource(
             relationship.Id,

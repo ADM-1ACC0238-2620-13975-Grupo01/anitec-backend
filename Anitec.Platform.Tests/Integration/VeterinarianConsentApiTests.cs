@@ -403,4 +403,23 @@ public class VeterinarianConsentApiTests(ApiFactory factory) : IClassFixture<Api
         Assert.Equal(HttpStatusCode.NoContent, remove.StatusCode);
         Assert.Empty((await LinksAsync(rancher)).EnumerateArray());
     }
+
+    [Fact]
+    public async Task TheTotalsOfARancher_AreOnlyGivenToTheVeterinarianOnceAccepted()
+    {
+        var rancher = await Rancher();
+        await rancher.CreateAnimalAsync(await rancher.CreateHerdAsync(), null);
+        var vet = await Vet();
+        var linkId = await vet.RequestClientAsync(rancher.UserId);
+
+        var pending = (await vet.ReadAsync(await vet.Http.GetAsync($"/api/v1/veterinarian/{vet.UserId}/clients"))).EnumerateArray().Single();
+        await rancher.AcceptLinkAsync(linkId);
+        var accepted = (await vet.ReadAsync(await vet.Http.GetAsync($"/api/v1/veterinarian/{vet.UserId}/clients"))).EnumerateArray().Single();
+
+        Assert.Equal("Pending", pending.GetProperty("status").GetString());
+        Assert.Equal(0, pending.GetProperty("herds").GetInt32());
+        Assert.Equal(0, pending.GetProperty("animals").GetInt32());
+        Assert.Equal(1, accepted.GetProperty("herds").GetInt32());
+        Assert.Equal(1, accepted.GetProperty("animals").GetInt32());
+    }
 }
