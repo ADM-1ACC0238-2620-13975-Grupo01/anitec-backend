@@ -6,6 +6,7 @@ namespace Anitec.Platform.Clients.Domain.Repositories;
 public interface IVeterinarianClientRepository : IBaseRepository<VeterinarianClient>
 {
     Task<IEnumerable<VeterinarianClient>> FindByVeterinarianIdAsync(int veterinarianId, CancellationToken cancellationToken);
+    Task<IEnumerable<VeterinarianClient>> FindByRancherIdAsync(int rancherId, CancellationToken cancellationToken);
     Task<VeterinarianClient?> FindByVeterinarianIdAndRancherIdAsync(int veterinarianId, int rancherId, CancellationToken cancellationToken);
     Task<bool> ExistsByVeterinarianIdAndRancherIdAsync(int veterinarianId, int rancherId, CancellationToken cancellationToken);
 }

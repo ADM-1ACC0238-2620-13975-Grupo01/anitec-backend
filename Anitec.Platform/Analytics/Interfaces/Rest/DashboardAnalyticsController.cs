@@ -89,9 +89,11 @@ public class DashboardAnalyticsController(
     {
         if (veterinarianId != this.CurrentUser().Id) return this.Forbidden();
 
+        // Only accepted links count: a pending, rejected or revoked request gives no access to the rancher's data.
         var clients = (await veterinarianClientQueryService.Handle(
             new GetVeterinarianClientsByVeterinarianIdQuery(veterinarianId),
-            cancellationToken)).ToList();
+            cancellationToken)).Where(client => client.IsActive).ToList();
+        var scope = await this.ScopeAsync(accessScopeService, cancellationToken);
         var rancherIds = clients.Select(client => client.RancherId).ToHashSet();
         var herds = (await herdQueryService.Handle(new GetAllHerdsQuery(), cancellationToken))
             .Where(herd => rancherIds.Contains(herd.OwnerId) || herd.VeterinarianId == veterinarianId)
@@ -102,7 +104,7 @@ public class DashboardAnalyticsController(
             .Where(item => animalIds.Contains(item.AnimalId))
             .ToList();
         var activities = (await farmActivityQueryService.Handle(new GetAllFarmActivitiesQuery(), cancellationToken))
-            .Where(activity => activity.VeterinarianId == veterinarianId)
+            .Where(activity => activity.VeterinarianId == veterinarianId && scope.CanSeeActivity(activity))
             .ToList();
 
         return Ok(new VeterinarianDashboardResource(

@@ -110,6 +110,10 @@ namespace Anitec.Platform.Shared.Infrastructure.Persistence.EntityFrameworkCore.
                         .HasColumnType("datetime(6)")
                         .HasColumnName("accepted_at");
 
+                    b.Property<DateTime?>("ClosedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("closed_at");
+
                     b.Property<int>("RancherId")
                         .HasColumnType("int")
                         .HasColumnName("rancher_id");

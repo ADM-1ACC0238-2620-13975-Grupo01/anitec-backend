@@ -1,3 +1,4 @@
+using Anitec.Platform.Clients.Domain.Model;
 using Anitec.Platform.Clients.Domain.Repositories;
 using Anitec.Platform.Iam.Domain.Model.Aggregates;
 using Anitec.Platform.Livestock.Domain.Repositories;
@@ -18,7 +19,6 @@ public class AccessScopeService(
     IVeterinarianClientRepository clientRepository) : IAccessScopeService
 {
     private const string VeterinarianRole = "Veterinarian";
-    private const string AcceptedStatus = "Accepted";
 
     /// <inheritdoc />
     public async Task<AccessScope> GetAsync(User user, CancellationToken cancellationToken = default)
@@ -28,7 +28,7 @@ public class AccessScopeService(
         var clientRancherIds = new HashSet<int>();
         if (isVeterinarian)
             clientRancherIds = (await clientRepository.FindByVeterinarianIdAsync(user.Id, cancellationToken))
-                .Where(client => AcceptedStatus.Equals(client.Status, StringComparison.OrdinalIgnoreCase))
+                .Where(client => ClientLinkStatus.Is(client.Status, ClientLinkStatus.Accepted))
                 .Select(client => client.RancherId)
                 .ToHashSet();
 

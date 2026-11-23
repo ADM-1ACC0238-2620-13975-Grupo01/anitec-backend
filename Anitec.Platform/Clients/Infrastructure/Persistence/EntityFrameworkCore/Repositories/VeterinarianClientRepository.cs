@@ -22,6 +22,17 @@ public class VeterinarianClientRepository(AppDbContext context)
             .ToListAsync(cancellationToken);
     }
 
+    /// <summary>Lists every veterinarian link addressed to a rancher, newest request first.</summary>
+    public async Task<IEnumerable<VeterinarianClient>> FindByRancherIdAsync(
+        int rancherId,
+        CancellationToken cancellationToken)
+    {
+        return await Context.Set<VeterinarianClient>()
+            .Where(client => client.RancherId == rancherId)
+            .OrderByDescending(client => client.RequestedAt)
+            .ToListAsync(cancellationToken);
+    }
+
     /// <summary>Finds the link between a veterinarian and a rancher, or null if there is none.</summary>
     public async Task<VeterinarianClient?> FindByVeterinarianIdAndRancherIdAsync(
         int veterinarianId,
