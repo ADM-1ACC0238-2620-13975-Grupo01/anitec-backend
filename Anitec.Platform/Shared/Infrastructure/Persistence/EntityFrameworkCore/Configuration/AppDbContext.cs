@@ -44,6 +44,9 @@ public class AppDbContext(DbContextOptions options) : DbContext(options)
     {
         base.OnModelCreating(builder);
 
+        // Shared (idempotency records)
+        builder.ApplySharedConfiguration();
+
         // AniTec Core Contexts
         builder.ApplyLivestockConfiguration();
         builder.ApplySanitaryConfiguration();

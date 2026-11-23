@@ -18,4 +18,13 @@ public static class MiddlewareExtensions
     {
         return builder.UseMiddleware<GlobalExceptionHandlerMiddleware>();
     }
+
+    /// <summary>
+    ///     Use the idempotency middleware, which stores and replays the result of POST requests that carry an
+    ///     <c>Idempotency-Key</c> header. Register it after the request authorization middleware.
+    /// </summary>
+    public static IApplicationBuilder UseIdempotency(this IApplicationBuilder builder)
+    {
+        return builder.UseMiddleware<IdempotencyMiddleware>();
+    }
 }
