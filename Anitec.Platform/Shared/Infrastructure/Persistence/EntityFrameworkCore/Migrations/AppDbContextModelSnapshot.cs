@@ -58,6 +58,11 @@ namespace Anitec.Platform.Shared.Infrastructure.Persistence.EntityFrameworkCore.
                         .HasColumnType("varchar(40)")
                         .HasColumnName("type");
 
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
                     b.Property<int?>("VeterinarianId")
                         .HasColumnType("int")
                         .HasColumnName("veterinarian_id");
@@ -230,6 +235,11 @@ namespace Anitec.Platform.Shared.Infrastructure.Persistence.EntityFrameworkCore.
                         .HasColumnType("varchar(20)")
                         .HasColumnName("type");
 
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
                     b.HasKey("Id")
                         .HasName("p_k_financial_records");
 
@@ -358,6 +368,11 @@ namespace Anitec.Platform.Shared.Infrastructure.Persistence.EntityFrameworkCore.
                         .HasMaxLength(30)
                         .HasColumnType("varchar(30)")
                         .HasColumnName("tag");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
 
                     b.Property<decimal>("Weight")
                         .HasColumnType("decimal(18,2)")
@@ -558,6 +573,11 @@ namespace Anitec.Platform.Shared.Infrastructure.Persistence.EntityFrameworkCore.
                         .HasMaxLength(40)
                         .HasColumnType("varchar(40)")
                         .HasColumnName("type");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
 
                     b.Property<string>("Veterinarian")
                         .IsRequired()

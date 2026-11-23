@@ -1,3 +1,4 @@
+using Anitec.Platform.Shared.Domain.Model.Entities;
 using Anitec.Platform.Financial.Domain.Model.Commands;
 
 namespace Anitec.Platform.Financial.Domain.Model.Entities;
@@ -5,7 +6,7 @@ namespace Anitec.Platform.Financial.Domain.Model.Entities;
 /// <summary>
 /// An income or expense entry recorded by a rancher.
 /// </summary>
-public class FinancialRecord
+public class FinancialRecord : IVersionedEntity
 {
     public FinancialRecord()
     {
@@ -36,4 +37,6 @@ public class FinancialRecord
     public decimal Amount { get; set; }
     public DateOnly Date { get; set; }
     public string Description { get; set; }
+    /// <summary>Number of the current version of the record; it goes up every time the record is modified.</summary>
+    public int Version { get; set; } = 1;
 }

@@ -45,6 +45,7 @@ public class HealthEventsController(
         if (result is null) return NotFound();
         var scope = await this.ScopeAsync(accessScopeService, cancellationToken);
         if (!scope.CanSeeAnimalId(result.AnimalId)) return this.Forbidden();
+        this.SetETag(result.Version);
         return Ok(HealthEventResourceFromEntityAssembler.ToResourceFromEntity(result));
     }
 
@@ -57,6 +58,7 @@ public class HealthEventsController(
 
         var command = CreateHealthEventCommandFromResourceAssembler.ToCommandFromResource(resource);
         var result = await commandService.Handle(command, cancellationToken);
+        this.SetETag(result.Value!.Version);
         return CreatedAtAction(nameof(GetById), new { id = result.Value!.Id },
             HealthEventResourceFromEntityAssembler.ToResourceFromEntity(result.Value));
     }
@@ -70,9 +72,12 @@ public class HealthEventsController(
         var scope = await this.ScopeAsync(accessScopeService, cancellationToken);
         if (!scope.CanSeeAnimalId(existing.AnimalId) || !scope.CanSeeAnimalId(resource.AnimalId)) return this.Forbidden();
 
+        if (this.CheckIfMatch(existing.Version, HealthEventResourceFromEntityAssembler.ToResourceFromEntity(existing)) is { } stale) return stale;
+
         var command = UpdateHealthEventCommandFromResourceAssembler.ToCommandFromResource(id, resource);
         var result = await commandService.Handle(command, cancellationToken);
         if (result.IsFailure) return NotFound();
+        this.SetETag(result.Value!.Version);
         return Ok(HealthEventResourceFromEntityAssembler.ToResourceFromEntity(result.Value!));
     }
 
@@ -84,6 +89,8 @@ public class HealthEventsController(
         if (existing is null) return NotFound();
         var scope = await this.ScopeAsync(accessScopeService, cancellationToken);
         if (!scope.CanSeeAnimalId(existing.AnimalId)) return this.Forbidden();
+
+        if (this.CheckIfMatch(existing.Version, HealthEventResourceFromEntityAssembler.ToResourceFromEntity(existing)) is { } stale) return stale;
 
         var result = await commandService.Handle(new DeleteHealthEventCommand(id), cancellationToken);
         if (result.IsFailure) return NotFound();

@@ -27,7 +27,7 @@ public class AppDbContext(DbContextOptions options) : DbContext(options)
     protected override void OnConfiguring(DbContextOptionsBuilder builder)
     {
         // Apply audit timestamp interceptor for all IAuditableEntity implementations
-        builder.AddInterceptors(new AuditableEntityInterceptor());
+        builder.AddInterceptors(new AuditableEntityInterceptor(), new VersionedEntityInterceptor());
         base.OnConfiguring(builder);
     }
 
@@ -63,6 +63,9 @@ public class AppDbContext(DbContextOptions options) : DbContext(options)
 
         // IAM Context
         builder.ApplyIamConfiguration();
+
+        // Optimistic concurrency of the records that clients edit offline
+        builder.ApplyVersioning();
 
         // General Naming Convention for the database objects
         builder.UseSnakeCaseNamingConvention();

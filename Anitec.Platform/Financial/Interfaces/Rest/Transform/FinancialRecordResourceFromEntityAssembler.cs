@@ -8,6 +8,6 @@ public static class FinancialRecordResourceFromEntityAssembler
 {
     public static FinancialRecordResource ToResourceFromEntity(FinancialRecord entity)
     {
-        return new FinancialRecordResource(entity.Id, entity.OwnerId, entity.Type, entity.Category, entity.Amount, entity.Date, entity.Description);
+        return new FinancialRecordResource(entity.Id, entity.OwnerId, entity.Type, entity.Category, entity.Amount, entity.Date, entity.Description, entity.Version);
     }
 }

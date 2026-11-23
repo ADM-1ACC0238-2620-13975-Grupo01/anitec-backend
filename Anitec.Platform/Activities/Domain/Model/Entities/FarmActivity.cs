@@ -1,3 +1,4 @@
+using Anitec.Platform.Shared.Domain.Model.Entities;
 using Anitec.Platform.Activities.Domain.Model.Commands;
 
 namespace Anitec.Platform.Activities.Domain.Model.Entities;
@@ -6,7 +7,7 @@ namespace Anitec.Platform.Activities.Domain.Model.Entities;
 /// A task scheduled on a farm, such as a vaccination round or a feeding, owned by a rancher
 /// and optionally assigned to a veterinarian.
 /// </summary>
-public class FarmActivity
+public class FarmActivity : IVersionedEntity
 {
     public FarmActivity()
     {
@@ -40,4 +41,6 @@ public class FarmActivity
     public DateOnly Date { get; set; }
     public string Priority { get; set; }
     public string Status { get; set; }
+    /// <summary>Number of the current version of the record; it goes up every time the record is modified.</summary>
+    public int Version { get; set; } = 1;
 }

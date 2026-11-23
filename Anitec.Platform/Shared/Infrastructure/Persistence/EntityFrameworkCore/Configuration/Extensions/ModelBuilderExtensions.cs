@@ -25,6 +25,17 @@ public static class ModelBuilderExtensions
     }
 
     /// <summary>
+    ///     Makes the version of every <see cref="IVersionedEntity" /> a concurrency token, so a save based on an
+    ///     outdated version fails instead of overwriting a newer one. Call it after the entities are configured.
+    /// </summary>
+    public static void ApplyVersioning(this ModelBuilder builder)
+    {
+        foreach (var entityType in builder.Model.GetEntityTypes()
+                     .Where(type => typeof(IVersionedEntity).IsAssignableFrom(type.ClrType)).ToList())
+            builder.Entity(entityType.ClrType).Property(nameof(IVersionedEntity.Version)).IsConcurrencyToken();
+    }
+
+    /// <summary>
     ///     Use snake case naming convention for the database context
     /// </summary>
     /// <param name="builder">

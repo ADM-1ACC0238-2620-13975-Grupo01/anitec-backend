@@ -42,6 +42,7 @@ public class FinancialRecordsController(
         var result = await queryService.Handle(new GetFinancialRecordByIdQuery(id), cancellationToken);
         if (result is null) return NotFound();
         if (result.OwnerId != this.CurrentUser().Id) return this.Forbidden();
+        this.SetETag(result.Version);
         return Ok(FinancialRecordResourceFromEntityAssembler.ToResourceFromEntity(result));
     }
 
@@ -53,6 +54,7 @@ public class FinancialRecordsController(
 
         var command = CreateFinancialRecordCommandFromResourceAssembler.ToCommandFromResource(resource);
         var result = await commandService.Handle(command, cancellationToken);
+        this.SetETag(result.Value!.Version);
         return CreatedAtAction(nameof(GetById), new { id = result.Value!.Id },
             FinancialRecordResourceFromEntityAssembler.ToResourceFromEntity(result.Value));
     }
@@ -66,9 +68,12 @@ public class FinancialRecordsController(
         var userId = this.CurrentUser().Id;
         if (existing.OwnerId != userId || resource.OwnerId != userId) return this.Forbidden();
 
+        if (this.CheckIfMatch(existing.Version, FinancialRecordResourceFromEntityAssembler.ToResourceFromEntity(existing)) is { } stale) return stale;
+
         var command = UpdateFinancialRecordCommandFromResourceAssembler.ToCommandFromResource(id, resource);
         var result = await commandService.Handle(command, cancellationToken);
         if (result.IsFailure) return NotFound();
+        this.SetETag(result.Value!.Version);
         return Ok(FinancialRecordResourceFromEntityAssembler.ToResourceFromEntity(result.Value!));
     }
 
@@ -79,6 +84,8 @@ public class FinancialRecordsController(
         var existing = await queryService.Handle(new GetFinancialRecordByIdQuery(id), cancellationToken);
         if (existing is null) return NotFound();
         if (existing.OwnerId != this.CurrentUser().Id) return this.Forbidden();
+
+        if (this.CheckIfMatch(existing.Version, FinancialRecordResourceFromEntityAssembler.ToResourceFromEntity(existing)) is { } stale) return stale;
 
         var result = await commandService.Handle(new DeleteFinancialRecordCommand(id), cancellationToken);
         if (result.IsFailure) return NotFound();
