@@ -38,12 +38,24 @@ public class ApiTestClient(HttpClient http)
     public async Task<JsonElement> ReadAsync(HttpResponseMessage response) =>
         await response.Content.ReadFromJsonAsync<JsonElement>();
 
-    /// <summary>As a veterinarian, links the rancher as one of this user's clients.</summary>
-    public async Task AddClientAsync(int rancherId)
+    /// <summary>As a veterinarian, asks the rancher for access and returns the id of the pending link.</summary>
+    public async Task<int> RequestClientAsync(int rancherId)
     {
         var response = await Http.PostAsync($"/api/v1/veterinarian/{UserId}/clients/{rancherId}", null);
         response.EnsureSuccessStatusCode();
+        return (await ReadAsync(response)).GetProperty("id").GetInt32();
     }
+
+    /// <summary>As a rancher, accepts the pending request with this link id.</summary>
+    public async Task AcceptLinkAsync(int linkId)
+    {
+        var response = await Http.PostAsync($"/api/v1/rancher/{UserId}/veterinarian-links/{linkId}/accept", null);
+        response.EnsureSuccessStatusCode();
+    }
+
+    /// <summary>As a veterinarian, asks the rancher for access and has the rancher accept it, so the veterinarian becomes a client.</summary>
+    public async Task AddClientAsync(ApiTestClient rancher) =>
+        await rancher.AcceptLinkAsync(await RequestClientAsync(rancher.UserId));
 
     /// <summary>Creates a farm owned by this user and returns its id.</summary>
     public async Task<int> CreateHerdAsync(string name = "La Esperanza")

@@ -1,8 +1,9 @@
+using Anitec.Platform.Shared.Domain.Model.Entities;
 using Anitec.Platform.Livestock.Domain.Model.Commands;
 
 namespace Anitec.Platform.Livestock.Domain.Model.Entities;
 
-public class Animal
+public class Animal : IVersionedEntity
 {
     /// <summary>Status of an animal that left the active herd but whose history is kept.</summary>
     public const string ArchivedStatus = "Archivado";
@@ -48,4 +49,6 @@ public class Animal
     public string? Source { get; set; }
     public string? AgeRange { get; set; }
     public string? ImageUrl { get; set; }
+    /// <summary>Number of the current version of the record; it goes up every time the record is modified.</summary>
+    public int Version { get; set; } = 1;
 }

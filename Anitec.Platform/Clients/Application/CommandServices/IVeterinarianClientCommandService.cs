@@ -8,4 +8,7 @@ public interface IVeterinarianClientCommandService
 {
     Task<Result<VeterinarianClient>> Handle(CreateVeterinarianClientCommand command, CancellationToken cancellationToken);
     Task<Result> Handle(DeleteVeterinarianClientCommand command, CancellationToken cancellationToken);
+    Task<Result<VeterinarianClient>> Handle(AcceptVeterinarianRequestCommand command, CancellationToken cancellationToken);
+    Task<Result<VeterinarianClient>> Handle(RejectVeterinarianRequestCommand command, CancellationToken cancellationToken);
+    Task<Result<VeterinarianClient>> Handle(RevokeVeterinarianAccessCommand command, CancellationToken cancellationToken);
 }

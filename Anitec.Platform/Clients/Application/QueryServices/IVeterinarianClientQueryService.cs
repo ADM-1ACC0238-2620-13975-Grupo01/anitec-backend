@@ -6,4 +6,5 @@ namespace Anitec.Platform.Clients.Application.QueryServices;
 public interface IVeterinarianClientQueryService
 {
     Task<IEnumerable<VeterinarianClient>> Handle(GetVeterinarianClientsByVeterinarianIdQuery query, CancellationToken cancellationToken);
+    Task<IEnumerable<VeterinarianClient>> Handle(GetVeterinarianLinksByRancherIdQuery query, CancellationToken cancellationToken);
 }

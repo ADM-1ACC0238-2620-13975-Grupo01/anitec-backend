@@ -20,7 +20,9 @@ namespace Anitec.Platform.Clients.Interfaces.Rest;
 
 /// <summary>
 /// REST API for veterinarian–rancher client relationships.
-/// Veterinarian-only: list clients, list available ranchers, add/remove clients.
+/// Veterinarian-only: list clients, list available ranchers, ask a rancher for access, withdraw a link.
+/// Asking creates a pending request; the rancher decides (see <see cref="RancherVeterinarianLinksController"/>)
+/// and the veterinarian sees the data of a rancher only once the request is accepted.
 /// Enriches responses with herd and animal counts per rancher.
 /// A veterinarian can only manage their own client list; any other veterinarian id answers 403.
 /// </summary>
@@ -59,8 +61,8 @@ public class VeterinarianClientsController(
     }
 
     /// <summary>
-    /// Lists ranchers who are not yet clients of this veterinarian
-    /// (candidates to invite/add), including herd and animal counts.
+    /// Lists ranchers this veterinarian can ask for access: those without a pending or accepted link,
+    /// including herd and animal counts.
     /// </summary>
     [HttpGet("{veterinarianId:int}/available-ranchers")]
     public async Task<IActionResult> GetAvailableRanchers(int veterinarianId, CancellationToken cancellationToken)
@@ -70,7 +72,11 @@ public class VeterinarianClientsController(
         var relationships = await queryService.Handle(
             new GetVeterinarianClientsByVeterinarianIdQuery(veterinarianId),
             cancellationToken);
-        var assignedRancherIds = relationships.Select(client => client.RancherId).ToHashSet();
+        // A rancher with a pending or accepted link is not a candidate; one who rejected or revoked can be asked again.
+        var assignedRancherIds = relationships
+            .Where(client => client.IsPending || client.IsActive)
+            .Select(client => client.RancherId)
+            .ToHashSet();
         var users = await userQueryService.Handle(new GetAllUsersQuery(), cancellationToken);
         var herds = await herdQueryService.Handle(new GetAllHerdsQuery(), cancellationToken);
         var animals = await animalQueryService.Handle(new GetAllAnimalsQuery(), cancellationToken);
@@ -93,11 +99,19 @@ public class VeterinarianClientsController(
         return Ok(resources);
     }
 
-    /// <summary>Links a rancher as a client of the veterinarian. Returns 409 on conflict.</summary>
+    /// <summary>
+    /// Asks a rancher for access (US-020). The request is created as Pending and gives no access until the rancher
+    /// accepts it. Answers 404 when the user is not a rancher and 409 when a request is already pending or the
+    /// access is already active; a link that was rejected or revoked is reopened as a new pending request.
+    /// </summary>
     [HttpPost("{veterinarianId:int}/clients/{rancherId:int}")]
     public async Task<IActionResult> AddClient(int veterinarianId, int rancherId, CancellationToken cancellationToken)
     {
         if (veterinarianId != this.CurrentUser().Id) return this.Forbidden();
+
+        var rancher = await userQueryService.Handle(new GetUserByIdQuery(rancherId), cancellationToken);
+        if (rancher is null || !rancher.Role.Equals("Rancher", StringComparison.OrdinalIgnoreCase))
+            return NotFound(new { message = "Rancher not found." });
 
         var result = await commandService.Handle(
             new CreateVeterinarianClientCommand(veterinarianId, rancherId),
@@ -105,10 +119,12 @@ public class VeterinarianClientsController(
 
         if (result.IsFailure) return Conflict(new { message = result.Message });
 
-        return CreatedAtAction(nameof(GetClients), new { veterinarianId }, result.Value);
+        var link = result.Value!;
+        var resource = VeterinarianLinkAssembler.ToResource(link, [this.CurrentUser(), rancher]);
+        return CreatedAtAction(nameof(GetClients), new { veterinarianId }, resource);
     }
 
-    /// <summary>Removes the veterinarian–rancher client link.</summary>
+    /// <summary>Withdraws a request or removes the veterinarian–rancher link, whatever its state.</summary>
     [HttpDelete("{veterinarianId:int}/clients/{rancherId:int}")]
     public async Task<IActionResult> RemoveClient(int veterinarianId, int rancherId, CancellationToken cancellationToken)
     {
@@ -125,7 +141,7 @@ public class VeterinarianClientsController(
 
     /// <summary>
     /// Maps a relationship entity plus related herds/animals into the API client resource
-    /// (includes herd count and animal count for the rancher).
+    /// (includes herd count and animal count for the rancher, zero until the link is accepted).
     /// </summary>
     private static VeterinarianClientResource ToClientResource(
         VeterinarianClient relationship,
@@ -133,7 +149,10 @@ public class VeterinarianClientsController(
         IEnumerable<Herd> herds,
         IEnumerable<Animal> animals)
     {
-        var rancherHerds = herds.Where(herd => herd.OwnerId == relationship.RancherId).ToList();
+        // The totals are the rancher's data: they are only given once the rancher accepted the veterinarian.
+        var rancherHerds = relationship.IsActive
+            ? herds.Where(herd => herd.OwnerId == relationship.RancherId).ToList()
+            : [];
         var rancherHerdIds = rancherHerds.Select(herd => herd.Id).ToHashSet();
         return new VeterinarianClientResource(
             relationship.Id,

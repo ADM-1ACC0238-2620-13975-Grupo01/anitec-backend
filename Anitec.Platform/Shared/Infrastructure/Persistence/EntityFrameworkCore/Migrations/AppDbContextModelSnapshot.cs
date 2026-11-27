@@ -58,6 +58,11 @@ namespace Anitec.Platform.Shared.Infrastructure.Persistence.EntityFrameworkCore.
                         .HasColumnType("varchar(40)")
                         .HasColumnName("type");
 
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
                     b.Property<int?>("VeterinarianId")
                         .HasColumnType("int")
                         .HasColumnName("veterinarian_id");
@@ -109,6 +114,10 @@ namespace Anitec.Platform.Shared.Infrastructure.Persistence.EntityFrameworkCore.
                     b.Property<DateTime?>("AcceptedAt")
                         .HasColumnType("datetime(6)")
                         .HasColumnName("accepted_at");
+
+                    b.Property<DateTime?>("ClosedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("closed_at");
 
                     b.Property<int>("RancherId")
                         .HasColumnType("int")
@@ -225,6 +234,11 @@ namespace Anitec.Platform.Shared.Infrastructure.Persistence.EntityFrameworkCore.
                         .HasMaxLength(20)
                         .HasColumnType("varchar(20)")
                         .HasColumnName("type");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
 
                     b.HasKey("Id")
                         .HasName("p_k_financial_records");
@@ -354,6 +368,11 @@ namespace Anitec.Platform.Shared.Infrastructure.Persistence.EntityFrameworkCore.
                         .HasMaxLength(30)
                         .HasColumnType("varchar(30)")
                         .HasColumnName("tag");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
 
                     b.Property<decimal>("Weight")
                         .HasColumnType("decimal(18,2)")
@@ -555,6 +574,11 @@ namespace Anitec.Platform.Shared.Infrastructure.Persistence.EntityFrameworkCore.
                         .HasColumnType("varchar(40)")
                         .HasColumnName("type");
 
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("int")
+                        .HasColumnName("version");
+
                     b.Property<string>("Veterinarian")
                         .IsRequired()
                         .HasMaxLength(80)
@@ -568,6 +592,61 @@ namespace Anitec.Platform.Shared.Infrastructure.Persistence.EntityFrameworkCore.
                         .HasDatabaseName("i_x_health_events_animal_id");
 
                     b.ToTable("health_events");
+                });
+
+            modelBuilder.Entity("Anitec.Platform.Shared.Domain.Model.Entities.IdempotencyRecord", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ContentType")
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)")
+                        .HasColumnName("content_type");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)")
+                        .HasColumnName("key");
+
+                    b.Property<string>("Location")
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)")
+                        .HasColumnName("location");
+
+                    b.Property<string>("RequestHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)")
+                        .HasColumnName("request_hash");
+
+                    b.Property<string>("ResponseBody")
+                        .HasColumnType("longtext")
+                        .HasColumnName("response_body");
+
+                    b.Property<int>("StatusCode")
+                        .HasColumnType("int")
+                        .HasColumnName("status_code");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("p_k_idempotency_records");
+
+                    b.HasIndex("UserId", "Key")
+                        .IsUnique()
+                        .HasDatabaseName("i_x_idempotency_records_user_id_key");
+
+                    b.ToTable("idempotency_records");
                 });
 
             modelBuilder.Entity("Anitec.Platform.Subscriptions.Domain.Model.Entities.Payment", b =>

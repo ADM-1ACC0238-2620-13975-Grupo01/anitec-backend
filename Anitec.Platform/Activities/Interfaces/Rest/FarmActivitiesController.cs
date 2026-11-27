@@ -49,6 +49,7 @@ public class FarmActivitiesController(
         if (result is null) return NotFound();
         var scope = await this.ScopeAsync(accessScopeService, cancellationToken);
         if (!scope.CanSeeActivity(result)) return this.Forbidden();
+        this.SetETag(result.Version);
         return Ok(FarmActivityResourceFromEntityAssembler.ToResourceFromEntity(result));
     }
 
@@ -61,6 +62,7 @@ public class FarmActivitiesController(
 
         var command = CreateFarmActivityCommandFromResourceAssembler.ToCommandFromResource(resource);
         var result = await commandService.Handle(command, cancellationToken);
+        this.SetETag(result.Value!.Version);
         return CreatedAtAction(nameof(GetById), new { id = result.Value!.Id },
             FarmActivityResourceFromEntityAssembler.ToResourceFromEntity(result.Value));
     }
@@ -75,9 +77,12 @@ public class FarmActivitiesController(
         if (!scope.CanSeeActivity(existing) || !scope.CanWriteActivity(resource.OwnerId, resource.VeterinarianId))
             return this.Forbidden();
 
+        if (this.CheckIfMatch(existing.Version, FarmActivityResourceFromEntityAssembler.ToResourceFromEntity(existing)) is { } stale) return stale;
+
         var command = UpdateFarmActivityCommandFromResourceAssembler.ToCommandFromResource(id, resource);
         var result = await commandService.Handle(command, cancellationToken);
         if (result.IsFailure) return NotFound();
+        this.SetETag(result.Value!.Version);
         return Ok(FarmActivityResourceFromEntityAssembler.ToResourceFromEntity(result.Value!));
     }
 
@@ -89,6 +94,8 @@ public class FarmActivitiesController(
         if (existing is null) return NotFound();
         var scope = await this.ScopeAsync(accessScopeService, cancellationToken);
         if (!scope.CanSeeActivity(existing)) return this.Forbidden();
+
+        if (this.CheckIfMatch(existing.Version, FarmActivityResourceFromEntityAssembler.ToResourceFromEntity(existing)) is { } stale) return stale;
 
         var result = await commandService.Handle(new DeleteFarmActivityCommand(id), cancellationToken);
         if (result.IsFailure) return NotFound();

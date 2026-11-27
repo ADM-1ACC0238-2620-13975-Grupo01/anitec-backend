@@ -3,6 +3,7 @@ using System.Text.Json;
 using Anitec.Platform.Resources.Errors;
 using Anitec.Platform.Resources.Shared;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Localization;
 
 // For OperationCanceledException
@@ -42,6 +43,16 @@ public class GlobalExceptionHandlerMiddleware(
         {
             logger.LogWarning(ex, "Request was cancelled: {Message}", ex.Message);
             await HandleOperationCanceledExceptionAsync(context, ex);
+        }
+        catch (DbUpdateConcurrencyException ex)
+        {
+            // Two changes to the same record raced and this one lost: nothing was overwritten.
+            logger.LogWarning(ex, "Concurrent update rejected: {Message}", ex.Message);
+            context.Response.StatusCode = StatusCodes.Status409Conflict;
+            await context.Response.WriteAsJsonAsync(new
+            {
+                message = "The record was changed by someone else at the same time. Reload it and try again."
+            });
         }
         catch (Exception ex)
         {

@@ -91,7 +91,7 @@ public class AccessScopeApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var clientHerd = await client.CreateHerdAsync();
         var strangerHerd = await stranger.CreateHerdAsync();
         var vet = await Vet();
-        await vet.AddClientAsync(client.UserId);
+        await vet.AddClientAsync(client);
 
         var ids = Ids(await vet.ReadAsync(await vet.Http.GetAsync("/api/v1/herds")));
 
@@ -254,7 +254,7 @@ public class AccessScopeApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
     {
         var client = await Rancher();
         var vet = await Vet();
-        await vet.AddClientAsync(client.UserId);
+        await vet.AddClientAsync(client);
 
         var activityId = await CreatedIdAsync(vet,
             await vet.Http.PostAsJsonAsync("/api/v1/farm-events", Activity(client.UserId, vet.UserId)));
@@ -371,7 +371,7 @@ public class AccessScopeApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var rancher = await Rancher();
         var other = await Rancher();
         var vet = await Vet();
-        await vet.AddClientAsync(rancher.UserId);
+        await vet.AddClientAsync(rancher);
 
         Assert.Equal(HttpStatusCode.OK, (await rancher.Http.GetAsync($"/api/v1/analytics/ranchers/{rancher.UserId}/dashboard")).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await other.Http.GetAsync($"/api/v1/analytics/ranchers/{rancher.UserId}/dashboard")).StatusCode);
@@ -388,7 +388,7 @@ public class AccessScopeApiTests(ApiFactory factory) : IClassFixture<ApiFactory>
         var other = await Rancher();
         var clientVet = await Vet();
         var strangerVet = await Vet();
-        await clientVet.AddClientAsync(rancher.UserId);
+        await clientVet.AddClientAsync(rancher);
         var url = $"/api/v1/analytics/ranchers/{rancher.UserId}/health-summary";
 
         Assert.Equal(HttpStatusCode.OK, (await rancher.Http.GetAsync(url)).StatusCode);

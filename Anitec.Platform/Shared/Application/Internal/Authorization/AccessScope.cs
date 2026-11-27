@@ -36,10 +36,14 @@ public sealed class AccessScope(
     public bool CanSeeRancher(int? rancherId) =>
         rancherId is { } id && (IsVeterinarian ? clientRancherIds.Contains(id) : id == UserId);
 
-    /// <summary>A rancher sees activities about them; a veterinarian sees those they created or about their clients.</summary>
+    /// <summary>
+    ///     A rancher sees activities about them. A veterinarian sees those about their accepted clients, plus
+    ///     their own that name no rancher; once a rancher revokes the access, the activities about that rancher
+    ///     are no longer visible even if the veterinarian created them.
+    /// </summary>
     public bool CanSeeActivity(FarmActivity activity) =>
         IsVeterinarian
-            ? activity.VeterinarianId == UserId || CanSeeRancher(activity.OwnerId)
+            ? CanSeeRancher(activity.OwnerId) || activity.OwnerId is null && activity.VeterinarianId == UserId
             : activity.OwnerId == UserId;
 
     /// <summary>

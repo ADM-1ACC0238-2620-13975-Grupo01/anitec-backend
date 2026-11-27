@@ -71,6 +71,7 @@ using Anitec.Platform.Sanitary.Domain.Repositories;
 using Anitec.Platform.Sanitary.Infrastructure.Persistence.EntityFrameworkCore.Repositories;
 using Anitec.Platform.Shared.Application.Internal.Authorization;
 using Anitec.Platform.Shared.Domain.Repositories;
+using Anitec.Platform.Shared.Infrastructure.Documentation;
 using Anitec.Platform.Shared.Infrastructure.Interfaces.AspNetCore.Configuration;
 using Anitec.Platform.Shared.Infrastructure.Mediator.Cortex.Configuration;
 using Anitec.Platform.Shared.Infrastructure.Persistence.EntityFrameworkCore.Configuration;
@@ -162,11 +163,13 @@ builder.Services.AddSwaggerGen(options =>
     options.AddSecurityRequirement(document => new OpenApiSecurityRequirement
         { [new OpenApiSecuritySchemeReference("Bearer", document)] = [] });
     options.EnableAnnotations();
+    options.OperationFilter<IdempotencyKeyOperationFilter>();
 });
 
 // Shared Bounded Context
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IAccessScopeService, AccessScopeService>();
+builder.Services.AddScoped<IIdempotencyRecordRepository, IdempotencyRecordRepository>();
 
 // Livestock Bounded Context
 builder.Services.AddScoped<IHerdRepository, HerdRepository>();
@@ -287,6 +290,7 @@ app.UseStaticFiles();
 
 app.UseCors("AllowAllPolicy");
 app.UseRequestAuthorization();
+app.UseIdempotency();
 if (!app.Environment.IsProduction())
     app.UseHttpsRedirection();
 app.UseAuthorization();

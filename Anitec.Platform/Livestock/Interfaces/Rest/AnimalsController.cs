@@ -59,6 +59,7 @@ public class AnimalsController(
         if (result is null) return NotFound();
         var scope = await this.ScopeAsync(accessScopeService, cancellationToken);
         if (!scope.CanSeeAnimalId(result.Id)) return this.Forbidden();
+        this.SetETag(result.Version);
         return Ok(AnimalResourceFromEntityAssembler.ToResourceFromEntity(result));
     }
 
@@ -76,6 +77,7 @@ public class AnimalsController(
 
         var command = CreateAnimalCommandFromResourceAssembler.ToCommandFromResource(resource);
         var result = await commandService.Handle(command, cancellationToken);
+        this.SetETag(result.Value!.Version);
         return CreatedAtAction(nameof(GetById), new { id = result.Value!.Id },
             AnimalResourceFromEntityAssembler.ToResourceFromEntity(result.Value));
     }
@@ -96,9 +98,12 @@ public class AnimalsController(
         var scope = await this.ScopeAsync(accessScopeService, cancellationToken);
         if (!scope.CanSeeAnimalId(existing.Id) || !scope.CanSeeHerdId(resource.HerdId)) return this.Forbidden();
 
+        if (this.CheckIfMatch(existing.Version, AnimalResourceFromEntityAssembler.ToResourceFromEntity(existing)) is { } stale) return stale;
+
         var command = UpdateAnimalCommandFromResourceAssembler.ToCommandFromResource(id, resource);
         var result = await commandService.Handle(command, cancellationToken);
         if (result.IsFailure) return NotFound();
+        this.SetETag(result.Value!.Version);
         return Ok(AnimalResourceFromEntityAssembler.ToResourceFromEntity(result.Value!));
     }
 
@@ -135,6 +140,8 @@ public class AnimalsController(
         if (existing is null) return NotFound();
         var scope = await this.ScopeAsync(accessScopeService, cancellationToken);
         if (!scope.CanSeeAnimalId(existing.Id)) return this.Forbidden();
+
+        if (this.CheckIfMatch(existing.Version, AnimalResourceFromEntityAssembler.ToResourceFromEntity(existing)) is { } stale) return stale;
 
         var result = await commandService.Handle(new DeleteAnimalCommand(id), cancellationToken);
         if (result.IsFailure) return NotFound();
@@ -182,9 +189,13 @@ public class AnimalsController(
         var scope = await this.ScopeAsync(accessScopeService, cancellationToken);
         if (!scope.CanSeeAnimalId(existing.Id)) return this.Forbidden();
 
+        if (this.CheckIfMatch(existing.Version, AnimalResourceFromEntityAssembler.ToResourceFromEntity(existing)) is { } stale) return stale;
+
         var result = await commandService.Handle(new UpdateAnimalsStatusCommand([id], resource.Status), cancellationToken);
         if (result.IsFailure) return BadRequest(new { message = result.Message });
-        return Ok(AnimalResourceFromEntityAssembler.ToResourceFromEntity(result.Value!.Single()));
+        var updated = result.Value!.Single();
+        this.SetETag(updated.Version);
+        return Ok(AnimalResourceFromEntityAssembler.ToResourceFromEntity(updated));
     }
 
     /// <summary>Updates the status of many animals at once. Rancher role only.</summary>

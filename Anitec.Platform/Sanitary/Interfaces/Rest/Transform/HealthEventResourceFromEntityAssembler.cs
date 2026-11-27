@@ -7,6 +7,6 @@ public static class HealthEventResourceFromEntityAssembler
 {
     public static HealthEventResource ToResourceFromEntity(HealthEvent entity)
     {
-        return new HealthEventResource(entity.Id, entity.AnimalId, entity.Type, entity.Date, entity.Description, entity.Veterinarian, entity.Diagnosis, entity.Treatment, entity.Prescription, entity.FollowUp, entity.NextDueDate);
+        return new HealthEventResource(entity.Id, entity.AnimalId, entity.Type, entity.Date, entity.Description, entity.Veterinarian, entity.Diagnosis, entity.Treatment, entity.Prescription, entity.FollowUp, entity.NextDueDate, entity.Version);
     }
 }

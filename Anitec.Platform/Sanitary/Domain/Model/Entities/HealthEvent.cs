@@ -1,3 +1,4 @@
+using Anitec.Platform.Shared.Domain.Model.Entities;
 using Anitec.Platform.Sanitary.Domain.Model.Commands;
 
 namespace Anitec.Platform.Sanitary.Domain.Model.Entities;
@@ -5,7 +6,7 @@ namespace Anitec.Platform.Sanitary.Domain.Model.Entities;
 /// <summary>
 /// An entry in an animal's medical history, such as a vaccination, a check-up or a treatment.
 /// </summary>
-public class HealthEvent
+public class HealthEvent : IVersionedEntity
 {
     public HealthEvent()
     {
@@ -48,4 +49,6 @@ public class HealthEvent
     public string FollowUp { get; set; }
     /// <summary>Date of the next dose or check-up, if one is needed.</summary>
     public DateOnly? NextDueDate { get; set; }
+    /// <summary>Number of the current version of the record; it goes up every time the record is modified.</summary>
+    public int Version { get; set; } = 1;
 }
